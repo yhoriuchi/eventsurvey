@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="693" viewBox="0 0 600 693" role="img" aria-labelledby="title desc"><metadata><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/"><rdf:Description><dc:creator>RealFaviconGenerator</dc:creator><dc:source>https://realfavicongenerator.net</dc:source></rdf:Description></rdf:RDF></metadata><title id="title">eventsurvey</title><desc id="desc">A trend fitted before an event continues as a dashed counterfactual forecast. Separate observed daily dots vary after the event, with vertical gaps to the forecast.</desc><path d="M300 12 590 179.5V513.5L300 681 10 513.5V179.5Z" fill="#006D77"></path><path d="M300 29 575 188V505L300 664 25 505V188Z" fill="none" stroke="#FFFFFF" stroke-opacity=".45" stroke-width="2"></path><g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M105 418H495" stroke="#FFFFFF" stroke-opacity=".35" stroke-width="3"></path>
+    <path d="M300 166V434" stroke="#CDEEE8" stroke-opacity=".7" stroke-width="3"></path>
+    <path d="M108 350 171 329 234 308 300 286" stroke="#FFFFFF" stroke-width="10"></path>
+    <path d="M300 286 489 223" stroke="#CDEEE8" stroke-width="7" stroke-dasharray="13 15"></path>
+    <path d="M345 271V324 M393 255V294 M441 239V343 M489 223V281" stroke="#CDEEE8" stroke-opacity=".65" stroke-width="3"></path>
+  </g><g fill="#FFFFFF">
+    <circle cx="126" cy="324" r="8"></circle>
+    <circle cx="171" cy="345" r="8"></circle>
+    <circle cx="216" cy="299" r="8"></circle>
+    <circle cx="261" cy="312" r="8"></circle>
+    <circle cx="345" cy="324" r="10"></circle>
+    <circle cx="393" cy="294" r="10"></circle>
+    <circle cx="441" cy="343" r="10"></circle>
+    <circle cx="489" cy="281" r="10"></circle>
+  </g><text x="300" y="505" text-anchor="middle" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="60" font-weight="600" letter-spacing="-2">eventsurvey</text></svg>

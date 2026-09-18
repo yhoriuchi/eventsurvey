@@ -1,0 +1,69 @@
+---
+title: "Frequently Asked Questions"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Frequently Asked Questions}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+## Is an event automatically as-if randomized?
+
+No. Surprise does not rule out time trends, changes in who answers the survey,
+or other contemporaneous events. Identification depends on the fieldwork
+design and explicit assumptions, not the label attached to the event.
+
+## Why not compare pooled means before and after?
+
+That comparison assumes the no-event outcome would have been constant. A
+linear extrapolation allows a short-run pre-existing trend and makes its
+forecast performance inspectable.
+
+## How much pre-event data are needed?
+
+At least twice the chosen window length. A window of six requires at least 12
+consecutive pre-event periods. More history produces more matched reference
+forecasts and a more informative diagnostic.
+
+If `event_day = "exclude"`, one extra pre-event period is required because the
+rolling diagnostic reproduces the same skipped-period gap.
+
+## Why must periods be consecutive?
+
+The reference task must mimic the final task. Six observed survey days are not
+necessarily six calendar days. Silently compressing missing days changes both
+the trend and the forecast horizon.
+
+## What if there were no interviews on one day?
+
+Restrict the analysis to a justified consecutive span, redefine the time scale
+before fitting, or use a coarser period measure. The package does not guess
+which choice is appropriate.
+
+## What should I do with the event day?
+
+Use `event_day = "include"` when its respondents are considered exposed and
+`event_day = "exclude"` when forecasting should begin the next period. If the
+event day belongs in the aggregate forecast but its day-specific interpretation
+is ambiguous, use `report_event_day = FALSE` and explain that choice.
+
+## Does the package select the window automatically?
+
+No. Choose it from subject-matter knowledge and, ideally, prespecify it. Report
+sensitivity over plausible choices rather than optimizing significance.
+
+## Why is the honest interval wider?
+
+The conventional interval accounts only for sampling variation conditional on
+the line being correct. The honest interval also allows calibrated forecast
+error.
+
+## Can I add covariates or nonlinear trends?
+
+Not in the current public API. The research source explored those options, but
+their rolling fits require a fully validated joint covariance calculation.
+The public release favors a smaller, auditable implementation.

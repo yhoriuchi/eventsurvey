@@ -1,0 +1,8 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.github$
+^AGENTS\.md$
+^project_history$
+^_source$
+^docs$
+^LICENSE\.md$

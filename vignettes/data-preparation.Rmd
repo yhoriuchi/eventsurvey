@@ -1,0 +1,51 @@
+---
+title: "Preparing Survey Fieldwork Data"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Preparing Survey Fieldwork Data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+`eventsurvey()` expects one respondent per row. Prepare a numeric outcome and
+one equally spaced time variable before fitting.
+
+## Dates
+
+```{r}
+library(eventsurvey)
+
+dat <- simulate_eventsurvey(seed = 4)
+dat$interview_date <- as.Date("2026-06-15") + dat$day
+fit <- eventsurvey(y ~ interview_date, dat,
+                   event_time = as.Date("2026-06-15"), window = 6)
+```
+
+For timestamps, the package converts `POSIXt` values to calendar dates.
+Normalize time zones and decide how interviews spanning midnight should be
+classified before analysis.
+
+## Outcomes and missingness
+
+Binary variables, numeric scales, and continuous outcomes can be analyzed if
+a mean is substantively meaningful. Recode special missing values to `NA`.
+Rows with missing outcome or time are omitted with a warning; report that
+decision and the resulting daily counts.
+
+## Restricting the analysis span
+
+All pre-event periods from the earliest included period through the day before
+the event must be consecutive. If an older part of fieldwork contains gaps,
+make the restriction explicit:
+
+```{r}
+recent <- subset(dat, day >= -18)
+recent_fit <- eventsurvey(y ~ day, recent, event_time = 0, window = 6)
+```
+
+Do not remove a date merely because its outcome is unusual. Restrictions
+should follow fieldwork operations or a prespecified design rule.

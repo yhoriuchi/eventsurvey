@@ -1,0 +1,38 @@
+---
+title: "Sensitivity Analysis"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Sensitivity Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+The window controls how local the trend is and how far it is extrapolated.
+Short windows adapt to local movement but estimate the line from less data;
+long windows use more observations but impose linearity over a longer span.
+
+```{r}
+library(eventsurvey)
+
+dat <- simulate_eventsurvey(seed = 21, pre = 32, post = 9)
+windows <- 3:8
+fits <- lapply(windows, function(s) {
+  eventsurvey(y ~ day, dat, event_time = 0, window = s)
+})
+sensitivity <- do.call(rbind, lapply(seq_along(fits), function(i) {
+  cbind(window = windows[i], fits[[i]]$estimate)
+}))
+sensitivity[, c("window", "effect", "bias_bound", "conf_low", "conf_high")]
+```
+
+Changing the window changes the counterfactual, number of rolling exercises,
+bias bound, and sampling uncertainty. Interpret them jointly.
+
+Useful prespecified checks include plausible window lengths, including versus
+excluding the event period, restrictions motivated by known fieldwork breaks,
+and outcomes or subgroups chosen before inspecting results. Do not select the
+window that produces the smallest p-value or narrowest interval.

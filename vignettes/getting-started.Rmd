@@ -1,0 +1,96 @@
+---
+title: "Getting Started"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4.2)
+```
+
+An event-during-survey design arises when an event occurs while a survey is
+already collecting responses. The observed post-event outcome is available,
+but its no-event counterpart is not. The central task is therefore to
+extrapolate the pre-event path and compare it with what was observed after the
+event.
+
+## 1. Prepare respondent-level data
+
+Each row should be a respondent. The outcome must be numeric, and time must be
+an integer-like numeric variable, a `Date`, or a `POSIXt`. The package includes
+a simulator so the full workflow can be run without private research data.
+
+```{r}
+library(eventsurvey)
+
+dat <- simulate_eventsurvey(seed = 10)
+head(dat)
+```
+
+## 2. Estimate the effect
+
+The formula contains the outcome and time variables. `window = 6` fits a
+linear model on the final six pre-event days and forecasts six event/post-event
+days. The same six-by-six operation is repeated before the event to construct
+matched forecast errors.
+
+```{r}
+fit <- eventsurvey(y ~ day, dat, event_time = 0, window = 6)
+fit
+```
+
+The printed interval is the honest bounded-misspecification-error interval.
+It is generally wider than the conventional interval because it allows the
+post-event extrapolation to be wrong by as much as the worst comparable
+pre-event forecast.
+
+## 3. See what was extrapolated
+
+```{r counterfactual}
+plot(fit, type = "counterfactual")
+```
+
+Dark points are observed daily means. The coral line is the fitted pre-event
+trend and its continuation. Open points mark the forecast no-event means;
+teal vertical gaps are the day-specific estimates.
+
+```{r effects}
+plot(fit, type = "effects")
+```
+
+## 4. Inspect the forecasting diagnostic
+
+```{r diagnostics}
+plot(fit, type = "diagnostics")
+```
+
+Every line is one rolling fit. Its points show forecast errors one through six
+periods ahead. These are not placebo treatment effects; they are direct checks
+of the same extrapolation task used after the event.
+
+## Event-day conventions
+
+By default, relative period 0 is included. If respondents interviewed during
+the event period had ambiguous exposure, either skip it completely or retain
+it in the aggregate estimate while hiding its day-specific result.
+
+```{r}
+fit_after <- eventsurvey(
+  y ~ day, dat, event_time = 0, window = 6,
+  event_day = "exclude"
+)
+
+fit_hidden <- eventsurvey(
+  y ~ day, dat, event_time = 0, window = 6,
+  report_event_day = FALSE
+)
+```
+
+These choices answer different questions and should be made from the survey's
+fieldwork and event timing, not from whichever result is most favorable.
+When the event period is excluded, the diagnostic also skips one period between
+each rolling fit and its forecasts; this requires `2 * window + 1` pre-event
+periods.

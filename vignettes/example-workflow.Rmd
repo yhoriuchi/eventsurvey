@@ -1,0 +1,83 @@
+---
+title: "Complete Example Workflow"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Complete Example Workflow}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4.2)
+```
+
+This example follows the recommended sequence: inspect fieldwork, declare the
+analysis, fit once, examine diagnostics, and report both the estimate and the
+assumptions that support it.
+
+```{r}
+library(eventsurvey)
+
+survey_data <- simulate_eventsurvey(seed = 2026, pre = 30, post = 8,
+                                    respondents = 40)
+```
+
+## Inspect coverage before fitting
+
+```{r coverage}
+fit_preview <- eventsurvey(y ~ day, survey_data, event_time = 0, window = 6)
+plot(fit_preview, type = "daily")
+```
+
+The point size shows the number of respondents in a period. The estimator
+requires every calendar period in the analysis span to have at least one
+response. This prevents a gap such as Friday-to-Monday from being silently
+treated as one period when the estimand is defined by calendar day.
+
+## Prespecify the forecasting operation
+
+We use six days for both fitting and forecasting. With 30 pre-event days, the
+package can reproduce this task in `30 - 2 * 6 + 1 = 19` rolling windows, each
+with six forecast errors.
+
+```{r}
+fit <- eventsurvey(y ~ day, survey_data, event_time = 0, window = 6,
+                   alpha = 0.05)
+summary(fit)
+```
+
+The object keeps inspectable data frames rather than only formatted output:
+
+```{r}
+fit$estimate
+head(fit$days)
+head(fit$reference)
+```
+
+## Interpret the two intervals
+
+`conventional_low` and `conventional_high` treat the linear extrapolation as
+correct. `conf_low` and `conf_high` are the main honest interval. They combine
+sampling uncertainty with the bounded misspecification assumption. The
+`bias_bound` is the largest absolute rolling reference error.
+
+```{r counterfactual}
+plot(fit)
+```
+
+```{r diagnostics}
+plot(fit, type = "diagnostics")
+```
+
+## Minimum reporting checklist
+
+A transparent analysis should report:
+
+1. the event time and how within-period exposure was classified;
+2. the outcome and fieldwork time variable;
+3. the fit/forecast window and why it was chosen;
+4. coverage and sample sizes across periods;
+5. the rolling forecast errors and bias bound;
+6. the window-average and period-specific estimates with honest intervals;
+7. sensitivity to substantively plausible window lengths; and
+8. limitations of event exogeneity and respondent-timing assumptions.

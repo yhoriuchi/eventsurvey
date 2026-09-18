@@ -1,0 +1,36 @@
+Package: eventsurvey
+Title: Causal Inference for Events During Surveys
+Version: 0.0.0.9000
+Authors@R:
+    c(
+      person("Yusaku", "Horiuchi", role = c("aut", "cre"),
+             email = "yusaku.horiuchi@gmail.com",
+             comment = c(ORCID = "0000-0003-0295-4089")),
+      person("Guoer", "Liu", role = "aut"),
+      person("Jieun", "Oh", role = "aut"),
+      person("Yuki", "Shiraito", role = "aut")
+    )
+Description: Provides tools for estimating causal effects when an event
+    occurs while a survey is in the field. The workflow models
+    the unobserved no-event outcome path, evaluates short-horizon forecasts
+    with rolling pre-event exercises, and reports inference that accounts for
+    sampling uncertainty and bounded forecast misspecification.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Depends:
+    R (>= 4.1.0)
+Imports:
+    ggplot2,
+    ggthemes
+Suggests:
+    knitr,
+    pkgdown,
+    rmarkdown,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Config/Needs/website: pkgdown, knitr, rmarkdown, ggplot2, ggthemes
+VignetteBuilder: knitr
+Roxygen: list(markdown = TRUE)
+URL: https://yhoriuchi.github.io/eventsurvey/, https://github.com/yhoriuchi/eventsurvey
+BugReports: https://github.com/yhoriuchi/eventsurvey/issues
+Config/roxygen2/version: 8.1.0

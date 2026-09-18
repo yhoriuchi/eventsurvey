@@ -1,0 +1,63 @@
+---
+title: "Methodology and Assumptions"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Methodology and Assumptions}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+## Estimand
+
+For each post-event period, the method compares the observed mean outcome with
+the mean that would have been observed for that period's target population had
+the event not occurred. The window-average estimand gives equal weight to each
+forecast period, not to each respondent across the pooled window.
+
+## Identification
+
+An event being unanticipated is not enough. A causal interpretation requires,
+among other design-specific conditions:
+
+1. interview timing is not selected in response to unobserved potential outcomes;
+2. the event is the relevant discontinuous change over the short horizon;
+3. the observed pre-event trajectory informs the missing no-event trajectory; and
+4. the event does not change observation in a way that invalidates the comparison.
+
+The time-invariant before/after model is a special case with a constant
+counterfactual. `eventsurvey` instead makes a local linear extrapolation
+explicit and empirically examines comparable pre-event forecasts.
+
+## Matched rolling forecasts
+
+Let `s` be `window`. The final analysis fits a line to the last `s`
+pre-event periods and forecasts the next `s` periods. Before the event, every
+available block of `s` consecutive periods is used to forecast its next `s`
+periods. This produces errors at exactly the horizons required by the final
+analysis. At least `2s` consecutive pre-event periods are necessary.
+
+## Honest inference
+
+The bounded misspecification assumption says that the absolute error of the
+post-event counterfactual does not exceed the largest absolute matched
+pre-event forecast error. The confidence interval adapts the
+union--intersection construction of Kolesár and Rothe (2018). For each
+reference error and each sign, it combines the event-effect estimate and that
+reference error, including their covariance when they share period means.
+
+The implementation is analytic for a time-only linear model. Individual-level
+OLS is equivalent to weighted least squares on period means with period sample
+sizes as weights. Each effect and reference error can therefore be written as
+a linear combination of independent period means, making all overlapping
+window covariances explicit.
+
+## What the interval does not solve
+
+The procedure does not prove event exogeneity, repair event-caused changes in
+survey participation, or protect against a no-event path that departs more
+sharply than any matched pre-event forecast. It quantifies a transparent class
+of extrapolation errors; it does not replace design knowledge.

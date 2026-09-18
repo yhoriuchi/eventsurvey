@@ -1,0 +1,63 @@
+url: https://yhoriuchi.github.io/eventsurvey/
+
+development:
+  mode: unreleased
+
+template:
+  bootstrap: 5
+  bootswatch: flatly
+  bslib:
+    primary: "#006D77"
+    secondary: "#00535B"
+    link-color: "#006D77"
+    navbar-dark-color: "#FFFFFF"
+    navbar-dark-hover-color: "#CDEEE8"
+
+home:
+  title: eventsurvey
+  description: Causal inference for events during survey fieldwork.
+
+navbar:
+  structure:
+    left: [home, articles, reference, news, faq_page]
+    right: [github, issues]
+  components:
+    faq_page:
+      text: "FAQ"
+      href: articles/faq.html
+    github:
+      icon: fab fa-github
+      href: https://github.com/yhoriuchi/eventsurvey
+      aria-label: GitHub
+    issues:
+      text: "Issues"
+      href: https://github.com/yhoriuchi/eventsurvey/issues
+
+articles:
+- title: Getting Started
+  desc: Learn the event-during-survey workflow from data setup to inference.
+  contents:
+  - getting-started
+  - data-preparation
+  - example-workflow
+
+- title: Concepts and Assumptions
+  desc: Understand the target estimand, forecast restriction, and uncertainty.
+  contents:
+  - methodology
+  - sensitivity
+  - faq
+
+reference:
+- title: Estimate event effects
+  contents:
+  - eventsurvey
+  - plot.eventsurvey
+
+- title: Example data
+  contents:
+  - simulate_eventsurvey
+
+- title: Package
+  contents:
+  - eventsurvey-package
