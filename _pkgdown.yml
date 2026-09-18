@@ -41,6 +41,13 @@ articles:
   - data-preparation
   - example-workflow
 
+- title: Published Applications
+  desc: Reproduce the empirical applications with documented example data.
+  contents:
+  - published-applications
+  - bateson-weintraub
+  - epifanio-giani-ivandic
+
 - title: Concepts and Assumptions
   desc: Understand the target estimand, forecast restriction, and uncertainty.
   contents:
@@ -57,6 +64,8 @@ reference:
 - title: Example data
   contents:
   - simulate_eventsurvey
+  - published_examples
+  - eventsurvey_summary
 
 - title: Package
   contents:

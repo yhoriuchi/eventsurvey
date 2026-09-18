@@ -11,7 +11,8 @@ eventsurvey(
   window = 6L,
   event_day = c("include", "exclude"),
   report_event_day = TRUE,
-  alpha = 0.05
+  alpha = 0.05,
+  pre_periods = c("consecutive", "observed")
 )
 }
 \arguments{
@@ -35,6 +36,11 @@ results and plots. This is useful when exposure during the event period is
 ambiguous.}
 
 \item{alpha}{Significance level for confidence intervals.}
+
+\item{pre_periods}{How rolling pre-event windows are formed. The default,
+\code{"consecutive"}, requires every calendar period to be represented.
+\code{"observed"} forms windows from the ordered periods that contain data and
+is provided for replications whose original code skipped empty dates.}
 }
 \value{
 An object of class \code{eventsurvey} containing the estimate, honest and

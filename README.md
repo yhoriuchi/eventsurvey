@@ -50,9 +50,18 @@ The current release implements the manuscript's validated time-only linear
 specification. Covariate adjustment and alternative trends are not exposed as
 public options until their joint uncertainty calculations are validated.
 
+When respondent-level records cannot be redistributed,
+`eventsurvey_summary()` accepts one row per period with the response count,
+mean, and within-period variance. The package includes documented summary data
+for the CC0-licensed Epifanio--Giani--Ivandic application. For the
+Bateson--Weintraub application, the website provides a preparation recipe that
+authorized AmericasBarometer users can run locally without redistributing the
+source data.
+
 ## Learn more
 
 Start with [Getting Started](https://yhoriuchi.github.io/eventsurvey/articles/getting-started.html),
 then see the [complete workflow](https://yhoriuchi.github.io/eventsurvey/articles/example-workflow.html),
+[published applications](https://yhoriuchi.github.io/eventsurvey/articles/published-applications.html),
 [methodology](https://yhoriuchi.github.io/eventsurvey/articles/methodology.html),
 and [sensitivity analysis](https://yhoriuchi.github.io/eventsurvey/articles/sensitivity.html).

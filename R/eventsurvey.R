@@ -23,6 +23,10 @@
 #'   window-average estimate but is omitted from the printed day-specific
 #'   results and plots. This is useful when exposure during the event period is
 #'   ambiguous.
+#' @param pre_periods How rolling pre-event windows are formed. The default,
+#'   `"consecutive"`, requires every calendar period to be represented.
+#'   `"observed"` forms windows from the ordered periods that contain data and
+#'   is provided for replications whose original code skipped empty dates.
 #' @param alpha Significance level for confidence intervals.
 #' @return An object of class `eventsurvey` containing the estimate, honest and
 #'   conventional intervals, day-specific results, reference forecast errors,
@@ -36,9 +40,11 @@
 #' summary(fit)
 eventsurvey <- function(formula, data, event_time, window = 6L,
                         event_day = c("include", "exclude"),
-                        report_event_day = TRUE, alpha = 0.05) {
+                        report_event_day = TRUE, alpha = 0.05,
+                        pre_periods = c("consecutive", "observed")) {
   cl <- match.call()
   event_day <- match.arg(event_day)
+  pre_periods <- match.arg(pre_periods)
   validate_scalar(window, "window", lower = 2, integer = TRUE)
   validate_scalar(alpha, "alpha", lower = 0, upper = 1, open = TRUE)
   if (!is.logical(report_event_day) || length(report_event_day) != 1L ||
@@ -77,7 +83,7 @@ eventsurvey <- function(formula, data, event_time, window = 6L,
   required_pre <- seq.int(min(ps$relative_period[ps$relative_period < 0]), -1L)
   missing_pre <- setdiff(required_pre, ps$relative_period)
   missing_post <- setdiff(target, ps$relative_period)
-  if (length(missing_pre)) {
+  if (length(missing_pre) && pre_periods == "consecutive") {
     stop("Pre-event periods must be consecutive. Missing relative period(s): ",
          paste(missing_pre, collapse = ", "), ". Restrict `data` to a consecutive analysis span.",
          call. = FALSE)
@@ -91,7 +97,7 @@ eventsurvey <- function(formula, data, event_time, window = 6L,
     stop("At least ", minimum_pre, " consecutive pre-event periods are required for window = ",
          window, " with event_day = \"", event_day, "\".", call. = FALSE)
   }
-  built <- build_design(ps, window, target)
+  built <- build_design(ps, window, target, pre_periods)
   result <- estimate_design(built, ps, alpha)
   day_results <- estimate_days(built, ps, alpha)
   if (event_day == "include" && !report_event_day) {
@@ -100,6 +106,100 @@ eventsurvey <- function(formula, data, event_time, window = 6L,
   settings <- list(window = as.integer(window), alpha = alpha,
                    event_time = event_time, event_day = event_day,
                    report_event_day = report_event_day,
+                   pre_periods = pre_periods,
+                   fit_periods = built$final_fit,
+                   outcome = names(mf)[1L], time = names(mf)[2L])
+  structure(list(estimate = result$estimate, days = day_results,
+                 reference = result$reference, daily = ps,
+                 fitted = result$fitted, settings = settings,
+                 call = cl, formula = formula), class = "eventsurvey")
+}
+
+#' Estimate event effects from period-level summaries
+#'
+#' `eventsurvey_summary()` is the sufficient-statistics counterpart to
+#' [eventsurvey()]. It is useful when respondent-level observations cannot be
+#' redistributed but each period's count, mean, and sample variance are
+#' available. For a time-only linear model, it produces the same estimates as
+#' the respondent-level function.
+#'
+#' @param formula A two-sided formula of the form `period_mean ~ time`.
+#' @param data A data frame with one row per observed period.
+#' @param n The unquoted name of the column containing respondent counts.
+#' @param variance The unquoted name of the column containing the within-period
+#'   sample variance of the outcome. It may be `NA` when `n` is one; the
+#'   pooled within-period variance is then used for uncertainty calculations.
+#' @inheritParams eventsurvey
+#' @return An object of class `eventsurvey`; see [eventsurvey()].
+#' @export
+#' @examples
+#' dat <- simulate_eventsurvey(seed = 10)
+#' daily <- aggregate(y ~ day, dat, function(z) {
+#'   c(mean = mean(z), n = length(z), variance = var(z))
+#' })
+#' daily <- data.frame(day = daily$day, mean = daily$y[, "mean"],
+#'                     n = daily$y[, "n"], variance = daily$y[, "variance"])
+#' fit <- eventsurvey_summary(mean ~ day, daily, n = n, variance = variance,
+#'                            event_time = 0, window = 6)
+eventsurvey_summary <- function(formula, data, n, variance, event_time,
+                                window = 6L,
+                                event_day = c("include", "exclude"),
+                                report_event_day = TRUE, alpha = 0.05,
+                                pre_periods = c("consecutive", "observed")) {
+  cl <- match.call()
+  event_day <- match.arg(event_day)
+  pre_periods <- match.arg(pre_periods)
+  validate_scalar(window, "window", lower = 2, integer = TRUE)
+  validate_scalar(alpha, "alpha", lower = 0, upper = 1, open = TRUE)
+  if (!is.logical(report_event_day) || length(report_event_day) != 1L ||
+      is.na(report_event_day)) {
+    stop("`report_event_day` must be TRUE or FALSE.", call. = FALSE)
+  }
+  if (!inherits(formula, "formula") || length(formula) != 3L) {
+    stop("`formula` must have the form period_mean ~ time.", call. = FALSE)
+  }
+  mf <- stats::model.frame(formula, data = data, na.action = stats::na.pass)
+  if (ncol(mf) != 2L) {
+    stop("The current implementation requires exactly one time variable.", call. = FALSE)
+  }
+  means <- stats::model.response(mf)
+  time <- mf[[2L]]
+  n_values <- eval(substitute(n), data, parent.frame())
+  variance_values <- eval(substitute(variance), data, parent.frame())
+  if (length(n_values) != nrow(data) || length(variance_values) != nrow(data)) {
+    stop("`n` and `variance` must each identify one column in `data`.", call. = FALSE)
+  }
+  day <- relative_period(time, event_time)
+  ps <- summary_period_stats(day, n_values, means, variance_values)
+  target <- if (event_day == "include") 0:(window - 1L) else seq_len(window)
+  if (!any(ps$relative_period < 0)) stop("The data contain no pre-event periods.", call. = FALSE)
+  required_pre <- seq.int(min(ps$relative_period[ps$relative_period < 0]), -1L)
+  missing_pre <- setdiff(required_pre, ps$relative_period)
+  missing_post <- setdiff(target, ps$relative_period)
+  if (length(missing_pre) && pre_periods == "consecutive") {
+    stop("Pre-event periods must be consecutive. Missing relative period(s): ",
+         paste(missing_pre, collapse = ", "), ". Use `pre_periods = \"observed\"` only to reproduce a design that deliberately skips empty periods.",
+         call. = FALSE)
+  }
+  if (length(missing_post)) {
+    stop("Every forecast period must contain at least one response. Missing relative period(s): ",
+         paste(missing_post, collapse = ", "), ".", call. = FALSE)
+  }
+  minimum_pre <- 2L * window + if (event_day == "exclude") 1L else 0L
+  if (sum(ps$relative_period < 0) < minimum_pre) {
+    stop("At least ", minimum_pre, " pre-event periods are required.", call. = FALSE)
+  }
+  built <- build_design(ps, window, target, pre_periods)
+  result <- estimate_design(built, ps, alpha)
+  day_results <- estimate_days(built, ps, alpha)
+  if (event_day == "include" && !report_event_day) {
+    day_results <- day_results[day_results$relative_period != 0, , drop = FALSE]
+  }
+  settings <- list(window = as.integer(window), alpha = alpha,
+                   event_time = event_time, event_day = event_day,
+                   report_event_day = report_event_day,
+                   pre_periods = pre_periods,
+                   fit_periods = built$final_fit,
                    outcome = names(mf)[1L], time = names(mf)[2L])
   structure(list(estimate = result$estimate, days = day_results,
                  reference = result$reference, daily = ps,
@@ -168,6 +268,7 @@ print.summary.eventsurvey <- function(x, ...) {
   cat("\nSettings\n")
   cat("  Fit and forecast window:", x$settings$window, "periods\n")
   cat("  Event period:", x$settings$event_day, "\n")
+  cat("  Pre-event period sequence:", x$settings$pre_periods, "\n")
   cat("  Confidence level:", 100 * (1 - x$settings$alpha), "%\n\n")
   cat("Window-average effect\n")
   print(x$estimate, row.names = FALSE)

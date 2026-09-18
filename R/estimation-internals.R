@@ -47,28 +47,76 @@ period_stats <- function(data) {
              variance = sigma2, mean_variance = sigma2 / n)
 }
 
+summary_period_stats <- function(day, n, mean, variance) {
+  if (!is.numeric(n) || !is.numeric(mean) || !is.numeric(variance)) {
+    stop("`n`, the period mean, and `variance` must be numeric.", call. = FALSE)
+  }
+  if (any(!is.finite(day)) || any(day != as.integer(day))) {
+    stop("Summary time values must identify whole, equally spaced periods.", call. = FALSE)
+  }
+  if (any(!is.finite(n)) || any(n < 1) || any(n != as.integer(n))) {
+    stop("`n` must contain positive integer counts.", call. = FALSE)
+  }
+  if (any(!is.finite(mean))) {
+    stop("Period means must contain only finite values.", call. = FALSE)
+  }
+  if (any(is.finite(variance) & variance < 0)) {
+    stop("`variance` cannot contain negative values.", call. = FALSE)
+  }
+  if (anyDuplicated(day)) {
+    stop("Summary data must contain exactly one row per period.", call. = FALSE)
+  }
+  ok <- n > 1L & is.finite(variance)
+  if (!any(ok)) {
+    stop("At least one period must have a finite variance and two or more responses.",
+         call. = FALSE)
+  }
+  invalid <- !is.finite(variance) & n > 1L
+  if (any(invalid)) {
+    stop("Missing variances are permitted only for periods with one response.",
+         call. = FALSE)
+  }
+  pooled <- sum((n[ok] - 1) * variance[ok]) / sum(n[ok] - 1)
+  sigma2 <- ifelse(ok, variance, pooled)
+  out <- data.frame(relative_period = as.integer(day), n = as.integer(n),
+                    mean = as.numeric(mean), variance = sigma2,
+                    mean_variance = sigma2 / n)
+  out[order(out$relative_period), , drop = FALSE]
+}
+
 prediction_weights <- function(fit_days, fit_n, target_day) {
   design <- cbind(1, fit_days)
   cross <- t(design * fit_n)
   as.numeric(c(1, target_day) %*% solve(cross %*% design, cross))
 }
 
-build_design <- function(ps, window, target) {
+build_design <- function(ps, window, target,
+                         pre_periods = c("consecutive", "observed")) {
+  pre_periods <- match.arg(pre_periods)
   days <- ps$relative_period
   pre <- days[days < 0]
   index <- function(x) match(x, days)
-  final_fit <- -window:-1L
+  final_fit <- if (pre_periods == "consecutive") -window:-1L else utils::tail(pre, window)
   if (anyNA(index(final_fit))) stop("The final fitting window has missing periods.", call. = FALSE)
-  forecast_offsets <- target - max(final_fit)
-  last_start <- -window - max(forecast_offsets)
-  starts <- seq.int(min(pre), last_start)
   m <- nrow(ps)
   rows <- list()
   map <- list()
   k <- 0L
-  for (start in starts) {
-    fit <- seq.int(start, length.out = window)
-    forecast <- max(fit) + forecast_offsets
+  if (pre_periods == "consecutive") {
+    forecast_offsets <- target - max(final_fit)
+    last_start <- -window - max(forecast_offsets)
+    starts <- seq.int(min(pre), last_start)
+    fit_windows <- lapply(starts, function(start) seq.int(start, length.out = window))
+    forecast_windows <- lapply(fit_windows, function(fit) max(fit) + forecast_offsets)
+  } else {
+    n_windows <- length(pre) - 2L * window + 1L
+    starts <- seq_len(n_windows)
+    fit_windows <- lapply(starts, function(j) pre[j:(j + window - 1L)])
+    forecast_windows <- lapply(starts, function(j) pre[(j + window):(j + 2L * window - 1L)])
+  }
+  for (j in seq_along(fit_windows)) {
+    fit <- fit_windows[[j]]
+    forecast <- forecast_windows[[j]]
     fit_n <- ps$n[index(fit)]
     for (target_day in forecast) {
       weights <- prediction_weights(fit, fit_n, target_day)
@@ -77,7 +125,7 @@ build_design <- function(ps, window, target) {
       row[index(fit)] <- row[index(fit)] - weights
       k <- k + 1L
       rows[[k]] <- row
-      map[[k]] <- c(fit_start = start, forecast_period = target_day,
+      map[[k]] <- c(fit_start = fit[1L], forecast_period = target_day,
                     horizon = target_day - max(fit))
     }
   }
@@ -94,7 +142,7 @@ build_design <- function(ps, window, target) {
   list(reference_rows = reference_rows, reference_map = reference_map,
        effect_rows = effect_rows, counterfactual_rows = counterfactual_rows,
        average_row = colMeans(effect_rows), final_fit = final_fit,
-       target = target, n_windows = length(starts))
+       target = target, n_windows = length(fit_windows))
 }
 
 honest_interval <- function(point_row, point, reference_rows, reference_errors,

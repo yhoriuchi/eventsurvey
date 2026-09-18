@@ -1,0 +1,59 @@
+---
+title: "Published Applications"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Published Applications}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+The website documents two empirical applications used to illustrate
+`eventsurvey`. The Epifanio--Giani--Ivandic article runs directly from the
+CC0-derived summaries included in the package. The Bateson--Weintraub article
+provides an executable local preparation recipe because the AmericasBarometer
+license does not permit the package to redistribute its source data.
+
+```{r}
+library(eventsurvey)
+data(published_examples)
+table(published_examples$study, published_examples$outcome)
+```
+
+## What can be reproduced
+
+The articles reproduce the **eventsurvey reanalyses** of the published data:
+the daily descriptive series, common counterfactual path, day-specific effects,
+honest intervals, rolling diagnostics, and window-length sensitivity results.
+They do not claim to reproduce every model in the original articles, which use
+different estimands and additional specifications.
+
+* [Bateson and Weintraub (2022)](bateson-weintraub.html) studies trust in the
+  U.S. government around the 2016 U.S. election.
+* [Epifanio, Giani, and Ivandic (2023)](epifanio-giani-ivandic.html) studies
+  support for restrictions on privacy and procedural rights after the 2005
+  London bombings.
+
+## Data access and redistribution
+
+For the time-only weighted linear model, each date's count, mean, and sample
+variance are sufficient for the point estimates and analytic confidence
+intervals. The package includes those summaries only where redistribution is
+permitted. AmericasBarometer users must obtain data from LAPOP/CGD directly and
+agree to its current terms; `eventsurvey` supplies code rather than those data.
+The original sources and access conditions remain authoritative.
+
+```{r}
+str(published_examples)
+```
+
+The summary interface mirrors the respondent-level interface:
+
+```{r, eval = FALSE}
+eventsurvey_summary(mean ~ day, application_data,
+  n = n, variance = variance, event_time = 0, window = 7
+)
+```

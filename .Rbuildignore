@@ -5,4 +5,5 @@
 ^project_history$
 ^_source$
 ^docs$
+^data-raw$
 ^LICENSE\.md$
