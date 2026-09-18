@@ -33,10 +33,17 @@ plot(fit, type = "diagnostics")
 ```
 
 The `window` argument is used symmetrically: each model is fit to that many
-consecutive pre-event periods and forecasts the next `window` periods. At
-least `2 * window` consecutive pre-event periods are required.
+observed pre-event periods and forecasts the next `window` observed periods.
+The actual time values are retained, so missing dates are not compressed.
+The fitted object reports detected pre-event and forecast gaps and the elapsed
+span of each rolling window. At least `2 * window` observed pre-event periods
+and `window` observed forecast periods are required.
 Skipping the event period requires one additional pre-event period so the
 rolling diagnostic can reproduce the same one-period gap.
+
+For fieldwork conducted every day, use
+`pre_periods = "consecutive"` to require an uninterrupted calendar sequence.
+This strict mode stops and identifies any missing pre-event periods.
 
 ## What the estimate means
 
@@ -62,6 +69,7 @@ source data.
 
 Start with [Getting Started](https://yhoriuchi.github.io/eventsurvey/articles/getting-started.html),
 then see the [complete workflow](https://yhoriuchi.github.io/eventsurvey/articles/example-workflow.html),
+[sparse survey schedules](https://yhoriuchi.github.io/eventsurvey/articles/sparse-survey-schedules.html),
 [published applications](https://yhoriuchi.github.io/eventsurvey/articles/published-applications.html),
 [methodology](https://yhoriuchi.github.io/eventsurvey/articles/methodology.html),
 and [sensitivity analysis](https://yhoriuchi.github.io/eventsurvey/articles/sensitivity.html).

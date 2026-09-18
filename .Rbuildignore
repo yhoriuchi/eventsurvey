@@ -7,3 +7,5 @@
 ^docs$
 ^data-raw$
 ^LICENSE\.md$
+^output$
+^tmp$

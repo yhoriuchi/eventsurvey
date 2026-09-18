@@ -1,0 +1,208 @@
+---
+title: "Sparse Survey Schedules"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Sparse Survey Schedules}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 6.8,
+  fig.height = 3.8
+)
+```
+
+Survey fieldwork often does not produce responses every day. This article
+shows how `eventsurvey` handles such schedules without treating an unobserved
+date as though it contained an outcome. It compares two datasets derived from
+the same simulation:
+
+1. a complete schedule with responses every day; and
+2. a sparse schedule with several entire survey days removed.
+
+Because the sparse dataset is a subset of the complete dataset, respondents on
+the retained dates have exactly the same outcomes in both analyses. The only
+difference is the fieldwork schedule.
+
+## Simulate complete and sparse schedules
+
+```{r setup}
+library(eventsurvey)
+
+complete <- simulate_eventsurvey(
+  seed = 2026,
+  pre = 30,
+  post = 10,
+  respondents = 400
+)
+
+unobserved_days <- c(-24, -17, -11, -4, 2, 6)
+sparse <- subset(complete, !day %in% unobserved_days)
+
+fit_complete <- eventsurvey(
+  y ~ day,
+  complete,
+  event_time = 0,
+  window = 6
+)
+
+fit_sparse <- eventsurvey(
+  y ~ day,
+  sparse,
+  event_time = 0,
+  window = 6
+)
+```
+
+The counts plots make the schedule difference visible. The sparse data have no
+responses on four pre-event dates and two event/post-event dates.
+
+```{r coverage, fig.show='hold', out.width='49%', fig.cap='Response counts under complete daily fieldwork (left) and sparse fieldwork (right). The dashed line marks the event date.'}
+plot(fit_complete, type = "counts")
+plot(fit_sparse, type = "counts")
+```
+
+## Inspect what the package detected
+
+The default `pre_periods = "observed"` uses the requested number of dates with
+responses. It does not renumber those dates: their actual time values enter
+the trend and forecast calculations. The fitted object records every gap and
+the elapsed span of the final windows.
+
+```{r detected-gaps}
+fit_sparse$settings$missing_pre_periods
+fit_sparse$settings$missing_forecast_periods
+fit_sparse$settings$fit_periods
+fit_sparse$fitted$relative_period
+```
+
+```{r schedule-table, echo = FALSE}
+format_periods <- function(x) {
+  if (length(x)) paste(x, collapse = ", ") else "None"
+}
+
+schedule_summary <- data.frame(
+  Schedule = c("Complete", "Sparse"),
+  `Missing pre-event periods` = c(
+    format_periods(fit_complete$settings$missing_pre_periods),
+    format_periods(fit_sparse$settings$missing_pre_periods)
+  ),
+  `Missing forecast periods` = c(
+    format_periods(fit_complete$settings$missing_forecast_periods),
+    format_periods(fit_sparse$settings$missing_forecast_periods)
+  ),
+  `Final fit span` = c(
+    fit_complete$settings$fit_span,
+    fit_sparse$settings$fit_span
+  ),
+  `Final forecast span` = c(
+    fit_complete$settings$forecast_span,
+    fit_sparse$settings$forecast_span
+  ),
+  `Reference windows` = c(
+    fit_complete$estimate$n_windows,
+    fit_sparse$estimate$n_windows
+  ),
+  check.names = FALSE
+)
+
+knitr::kable(
+  schedule_summary,
+  align = c("l", "l", "l", "r", "r", "r"),
+  caption = "Detected gaps and elapsed window spans. Spans are measured on the original time scale."
+)
+```
+
+For the sparse data, the six-period fitting window consists of days
+`r paste(fit_sparse$settings$fit_periods, collapse = ", ")`; it spans
+`r fit_sparse$settings$fit_span` calendar days. The six-period effect window
+uses days `r paste(fit_sparse$fitted$relative_period, collapse = ", ")` and
+spans `r fit_sparse$settings$forecast_span` calendar days.
+
+## Compare the fitted counterfactuals
+
+```{r counterfactuals, fig.show='hold', out.width='49%', fig.cap='Observed outcomes and extrapolated no-event counterfactuals under complete daily fieldwork (left) and sparse fieldwork (right). The sparse analysis uses actual calendar dates and leaves unobserved dates empty.'}
+plot(fit_complete, type = "counterfactual")
+plot(fit_sparse, type = "counterfactual")
+```
+
+The simulations store the true event effect, so the estimated average can be
+compared with the true average over the dates targeted by each analysis.
+
+```{r result-table, echo = FALSE}
+true_effect <- aggregate(effect ~ day, complete, mean)
+
+average_truth <- function(fit) {
+  mean(true_effect$effect[
+    match(fit$fitted$relative_period, true_effect$day)
+  ])
+}
+
+result_summary <- data.frame(
+  Schedule = c("Complete", "Sparse"),
+  `Target dates` = c(
+    format_periods(fit_complete$fitted$relative_period),
+    format_periods(fit_sparse$fitted$relative_period)
+  ),
+  `True average effect` = c(
+    average_truth(fit_complete),
+    average_truth(fit_sparse)
+  ),
+  `Estimated average effect` = c(
+    fit_complete$estimate$effect,
+    fit_sparse$estimate$effect
+  ),
+  `Honest CI lower` = c(
+    fit_complete$estimate$conf_low,
+    fit_sparse$estimate$conf_low
+  ),
+  `Honest CI upper` = c(
+    fit_complete$estimate$conf_high,
+    fit_sparse$estimate$conf_high
+  ),
+  check.names = FALSE
+)
+
+knitr::kable(
+  result_summary,
+  digits = 3,
+  align = c("l", "l", "r", "r", "r", "r"),
+  caption = "True and estimated average effects for each schedule-specific target window."
+)
+```
+
+These estimates need not be identical. Missing pre-event dates can change the
+line used for extrapolation and the reference forecast errors. Missing
+event/post-event dates can also change the estimand because the first six
+observed dates are not necessarily the first six calendar dates. The package
+therefore reports the targeted dates rather than implying that the two rows
+estimate exactly the same quantity.
+
+## Require consecutive calendar days when appropriate
+
+If the research design requires uninterrupted calendar dates, request strict
+mode explicitly:
+
+```{r strict-mode, results='hide'}
+strict_sparse <- tryCatch(
+  eventsurvey(
+    y ~ day,
+    sparse,
+    event_time = 0,
+    window = 6,
+    pre_periods = "consecutive"
+  ),
+  error = conditionMessage
+)
+```
+
+For the complete data, observed-period and consecutive-period modes give the
+same result because no dates are missing. For the sparse data, strict mode
+stops and identifies pre-event days -24, -17, -11, and -4 as missing. This
+makes the choice explicit:
+observed-period mode supports irregular fieldwork, whereas consecutive-period
+mode enforces an uninterrupted calendar design.

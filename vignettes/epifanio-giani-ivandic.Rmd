@@ -34,10 +34,10 @@ only the derived daily sufficient statistics used here.
 The source replication code orders dates with usable responses and forms
 rolling windows over those observed dates. The privacy outcome has no usable
 response on pre-event days -17 and -12; the procedural outcome has none on day
--17. Thus, the source results are reproduced with
-`pre_periods = "observed"`. The safer package default is
-`pre_periods = "consecutive"`, which stops when calendar dates are missing.
-This article makes the replication choice explicit.
+-17. Thus, the source results use the package default,
+`pre_periods = "observed"`. The package reports these gaps and the elapsed
+span of each window. Analysts can request `pre_periods = "consecutive"` when
+their design instead requires uninterrupted calendar dates.
 
 ## Privacy-rights restrictions
 

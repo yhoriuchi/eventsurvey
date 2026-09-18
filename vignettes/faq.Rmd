@@ -26,23 +26,28 @@ forecast performance inspectable.
 ## How much pre-event data are needed?
 
 At least twice the chosen window length. A window of six requires at least 12
-consecutive pre-event periods. More history produces more matched reference
+observed pre-event periods. More history produces more matched reference
 forecasts and a more informative diagnostic.
 
 If `event_day = "exclude"`, one extra pre-event period is required because the
 rolling diagnostic reproduces the same skipped-period gap.
 
-## Why must periods be consecutive?
+## How does the package handle sparse survey dates?
 
-The reference task must mimic the final task. Six observed survey days are not
-necessarily six calendar days. Silently compressing missing days changes both
-the trend and the forecast horizon.
+The default forms windows from consecutive observed survey periods. It still
+uses their actual time values, automatically detects missing dates, and reports
+the elapsed span of each window. Thus, six observed survey days may span more
+than six calendar days, but the intervening gaps are not silently compressed.
 
 ## What if there were no interviews on one day?
 
-Restrict the analysis to a justified consecutive span, redefine the time scale
-before fitting, or use a coarser period measure. The package does not guess
-which choice is appropriate.
+The default continues with the remaining observed periods and records the date
+in `fit$settings$missing_pre_periods` or
+`fit$settings$missing_forecast_periods`. It does not interpolate an outcome for
+the empty date. Use `fit$windows` and the fitted settings to inspect elapsed
+fitting and forecasting spans. If uninterrupted dates are required by the
+design, set `pre_periods = "consecutive"`; the package then stops and identifies
+the gaps.
 
 ## What should I do with the event day?
 

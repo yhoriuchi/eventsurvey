@@ -1,0 +1,71 @@
+@media print {
+  @page {
+    size: letter;
+    margin: 0.55in 0.65in;
+  }
+
+  html,
+  body {
+    font-size: 10.5pt;
+  }
+
+  body {
+    padding-top: 0 !important;
+  }
+
+  .navbar,
+  aside,
+  footer,
+  .anchor,
+  .visually-hidden-focusable {
+    display: none !important;
+  }
+
+  .container.template-article {
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  main#main {
+    width: 100% !important;
+    max-width: none !important;
+    flex: 0 0 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .container.template-article > .row {
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+  }
+
+  .page-header,
+  h1,
+  h2 {
+    break-after: avoid-page;
+  }
+
+  .page-header .logo {
+    width: 90px;
+  }
+
+  pre,
+  .sourceCode,
+  .figure,
+  table {
+    break-inside: avoid-page;
+  }
+
+  table {
+    width: 100% !important;
+    table-layout: fixed;
+    font-size: 8pt;
+  }
+
+  a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+}

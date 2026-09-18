@@ -14,7 +14,7 @@ eventsurvey_summary(
   event_day = c("include", "exclude"),
   report_event_day = TRUE,
   alpha = 0.05,
-  pre_periods = c("consecutive", "observed")
+  pre_periods = c("observed", "consecutive")
 )
 }
 \arguments{
@@ -46,9 +46,10 @@ ambiguous.}
 \item{alpha}{Significance level for confidence intervals.}
 
 \item{pre_periods}{How rolling pre-event windows are formed. The default,
-\code{"consecutive"}, requires every calendar period to be represented.
-\code{"observed"} forms windows from the ordered periods that contain data and
-is provided for replications whose original code skipped empty dates.}
+\code{"observed"}, forms fitting and forecasting windows from ordered periods
+containing responses and supports sparse survey schedules. \code{"consecutive"}
+requires every period on the time scale to be represented. In either mode,
+models use the actual time values rather than compressing gaps.}
 }
 \value{
 An object of class \code{eventsurvey}; see \code{\link[=eventsurvey]{eventsurvey()}}.
@@ -65,8 +66,12 @@ dat <- simulate_eventsurvey(seed = 10)
 daily <- aggregate(y ~ day, dat, function(z) {
   c(mean = mean(z), n = length(z), variance = var(z))
 })
-daily <- data.frame(day = daily$day, mean = daily$y[, "mean"],
-                    n = daily$y[, "n"], variance = daily$y[, "variance"])
-fit <- eventsurvey_summary(mean ~ day, daily, n = n, variance = variance,
-                           event_time = 0, window = 6)
+daily <- data.frame(
+  day = daily$day, mean = daily$y[, "mean"],
+  n = daily$y[, "n"], variance = daily$y[, "variance"]
+)
+fit <- eventsurvey_summary(mean ~ day, daily,
+  n = n, variance = variance,
+  event_time = 0, window = 6
+)
 }

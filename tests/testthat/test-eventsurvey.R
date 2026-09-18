@@ -25,8 +25,10 @@ test_that("linear period means are extrapolated exactly", {
 test_that("Date inputs and excluded event periods work", {
   dat <- simulate_eventsurvey(seed = 11, pre = 20, post = 8)
   dat$date <- as.Date("2026-01-15") + dat$day
-  fit <- eventsurvey(y ~ date, dat, event_time = as.Date("2026-01-15"),
-                     window = 5, event_day = "exclude")
+  fit <- eventsurvey(y ~ date, dat,
+    event_time = as.Date("2026-01-15"),
+    window = 5, event_day = "exclude"
+  )
 
   expect_equal(fit$days$relative_period, 1:5)
   expect_equal(sort(unique(fit$reference$horizon)), 2:6)
@@ -34,25 +36,79 @@ test_that("Date inputs and excluded event periods work", {
 
 test_that("the event period can be forecast but hidden from day results", {
   dat <- simulate_eventsurvey(seed = 12, pre = 20, post = 8)
-  fit <- eventsurvey(y ~ day, dat, event_time = 0, window = 5,
-                     report_event_day = FALSE)
+  fit <- eventsurvey(y ~ day, dat,
+    event_time = 0, window = 5,
+    report_event_day = FALSE
+  )
 
   expect_false(0 %in% fit$days$relative_period)
   expect_true(0 %in% fit$fitted$relative_period)
 })
 
-test_that("calendar gaps and insufficient history fail clearly", {
+test_that("calendar gaps are diagnosed and strict mode remains available", {
   dat <- simulate_eventsurvey(seed = 13, pre = 12, post = 6)
-  expect_error(eventsurvey(y ~ day, dat[dat$day != -7, ], 0, window = 4),
-               "must be consecutive")
-  expect_error(eventsurvey(y ~ day, dat[dat$day >= -7, ], 0, window = 4),
-               "At least 8")
-  expect_error(eventsurvey(y ~ day, dat[dat$day >= -8, ], 0, window = 4,
-                           event_day = "exclude"), "At least 9")
-  expect_error(eventsurvey(y ~ day, dat[dat$day != 2, ], 0, window = 4),
-               "Every forecast period")
-  expect_error(eventsurvey(y ~ day, dat[dat$day >= 0, ], 0, window = 4),
-               "no pre-event")
+  gapped <- dat[dat$day != -3, ]
+  fit <- eventsurvey(y ~ day, gapped, 0, window = 4)
+  expect_equal(fit$settings$pre_periods, "observed")
+  expect_equal(fit$settings$missing_pre_periods, -3L)
+  expect_equal(fit$settings$n_missing_pre_periods, 1L)
+  expect_equal(fit$settings$pre_event_span, 12L)
+  expect_equal(fit$settings$fit_span, 5L)
+  expect_equal(nrow(fit$windows), fit$estimate$n_windows)
+  expect_true(any(fit$windows$forecast_span > 4L))
+  expect_match(
+    paste(capture.output(fit), collapse = "\n"),
+    "missing pre/forecast periods: 1 / 0"
+  )
+  expect_match(
+    paste(capture.output(summary(fit)), collapse = "\n"),
+    "Missing pre-event periods: 1 \\(-3\\)"
+  )
+  expect_error(
+    eventsurvey(y ~ day, gapped, 0,
+      window = 4,
+      pre_periods = "consecutive"
+    ),
+    "must be consecutive"
+  )
+})
+
+test_that("insufficient history fails clearly", {
+  dat <- simulate_eventsurvey(seed = 13, pre = 12, post = 6)
+  expect_error(
+    eventsurvey(y ~ day, dat[dat$day >= -7, ], 0, window = 4),
+    "At least 8"
+  )
+  expect_error(eventsurvey(y ~ day, dat[dat$day >= -8, ], 0,
+    window = 4,
+    event_day = "exclude"
+  ), "At least 9")
+  expect_error(
+    eventsurvey(y ~ day, dat[dat$day >= 0, ], 0, window = 4),
+    "no pre-event"
+  )
+})
+
+test_that("sparse forecast dates are diagnosed and strict mode rejects them", {
+  dat <- simulate_eventsurvey(seed = 18, pre = 12, post = 6)
+  gapped <- dat[dat$day != 2, ]
+  fit <- eventsurvey(y ~ day, gapped, 0, window = 4)
+
+  expect_equal(fit$days$relative_period, c(0L, 1L, 3L, 4L))
+  expect_equal(fit$settings$missing_forecast_periods, 2L)
+  expect_equal(fit$settings$n_missing_forecast_periods, 1L)
+  expect_equal(fit$settings$forecast_span, 5L)
+  expect_match(
+    paste(capture.output(summary(fit)), collapse = "\n"),
+    "Missing forecast periods: 1 \\(2\\)"
+  )
+  expect_error(
+    eventsurvey(y ~ day, gapped, 0,
+      window = 4,
+      pre_periods = "consecutive"
+    ),
+    "Every forecast period"
+  )
 })
 
 test_that("plot methods return ggplot objects", {
@@ -63,8 +119,10 @@ test_that("plot methods return ggplot objects", {
     expect_s3_class(plot(fit, type = type), "ggplot")
   }
   expect_s3_class(plot(fit, type = "effects", inner_level = 0.90), "ggplot")
-  expect_error(plot(fit, type = "effects", inner_level = 0.99),
-               "between zero and the fitted confidence level")
+  expect_error(
+    plot(fit, type = "effects", inner_level = 0.99),
+    "between zero and the fitted confidence level"
+  )
 })
 
 test_that("summary data reproduce respondent-level estimates", {
@@ -78,7 +136,8 @@ test_that("summary data reproduce respondent-level estimates", {
   )
   individual <- eventsurvey(y ~ day, dat, 0, window = 5)
   summarized <- eventsurvey_summary(mean ~ day, daily,
-    n = n, variance = variance, event_time = 0, window = 5)
+    n = n, variance = variance, event_time = 0, window = 5
+  )
 
   expect_equal(summarized$estimate, individual$estimate, tolerance = 1e-12)
   expect_equal(summarized$days, individual$days, tolerance = 1e-12)
@@ -89,7 +148,8 @@ test_that("published application summaries reproduce manuscript tables", {
   privacy <- subset(published_examples, grepl("privacy", outcome))
   fit_p <- eventsurvey_summary(mean ~ day, privacy,
     n = n, variance = variance, event_time = 0, window = 5,
-    report_event_day = FALSE, pre_periods = "observed")
+    report_event_day = FALSE, pre_periods = "observed"
+  )
   expect_equal(round(fit_p$days$effect, 3), c(-0.115, -0.050, -0.512, -0.050))
   expect_equal(round(fit_p$estimate$bias_bound, 3), 0.780)
   expect_equal(fit_p$estimate$n_windows, 7)
@@ -97,18 +157,35 @@ test_that("published application summaries reproduce manuscript tables", {
   procedural <- subset(published_examples, grepl("procedural", outcome))
   fit_r <- eventsurvey_summary(mean ~ day, procedural,
     n = n, variance = variance, event_time = 0, window = 7,
-    report_event_day = FALSE, pre_periods = "observed")
-  expect_equal(round(fit_r$days$effect, 3),
-               c(-0.079, -0.046, -0.444, -0.033, -0.017, -0.070))
+    report_event_day = FALSE, pre_periods = "observed"
+  )
+  expect_equal(
+    round(fit_r$days$effect, 3),
+    c(-0.079, -0.046, -0.444, -0.033, -0.017, -0.070)
+  )
   expect_equal(round(fit_r$estimate$bias_bound, 3), 0.402)
   expect_equal(fit_r$estimate$n_windows, 4)
 })
 
-test_that("observed-period mode is explicit when pre-event dates are empty", {
+test_that("observed-period mode is the default when pre-event dates are empty", {
   dat <- simulate_eventsurvey(seed = 16, pre = 16, post = 5)
   dat <- dat[dat$day != -12, ]
-  expect_error(eventsurvey(y ~ day, dat, 0, window = 4), "must be consecutive")
-  fit <- eventsurvey(y ~ day, dat, 0, window = 4, pre_periods = "observed")
+  fit <- eventsurvey(y ~ day, dat, 0, window = 4)
   expect_s3_class(fit, "eventsurvey")
   expect_equal(fit$settings$pre_periods, "observed")
+  expect_error(eventsurvey(y ~ day, dat, 0,
+    window = 4,
+    pre_periods = "consecutive"
+  ), "must be consecutive")
+})
+
+test_that("observed mode mirrors an excluded event period in reference windows", {
+  dat <- simulate_eventsurvey(seed = 17, pre = 17, post = 6)
+  fit <- eventsurvey(y ~ day, dat, 0,
+    window = 4,
+    event_day = "exclude"
+  )
+
+  expect_equal(fit$estimate$n_windows, 9L)
+  expect_true(all(fit$windows$forecast_start - fit$windows$fit_end == 2L))
 })

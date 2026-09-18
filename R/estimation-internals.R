@@ -25,7 +25,8 @@ relative_period <- function(time, event_time) {
   }
   if (any(!is.finite(out)) || any(abs(out - round(out)) > sqrt(.Machine$double.eps))) {
     stop("Time must identify whole, equally spaced periods (normally calendar days).",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   as.integer(round(out))
 }
@@ -43,8 +44,10 @@ period_stats <- function(data) {
   if (!any(ok)) stop("At least one period must contain two or more responses.", call. = FALSE)
   pooled <- sum((n[ok] - 1) * s2[ok]) / sum(n[ok] - 1)
   sigma2 <- ifelse(ok, s2, pooled)
-  data.frame(relative_period = days, n = n, mean = ybar,
-             variance = sigma2, mean_variance = sigma2 / n)
+  data.frame(
+    relative_period = days, n = n, mean = ybar,
+    variance = sigma2, mean_variance = sigma2 / n
+  )
 }
 
 summary_period_stats <- function(day, n, mean, variance) {
@@ -69,18 +72,22 @@ summary_period_stats <- function(day, n, mean, variance) {
   ok <- n > 1L & is.finite(variance)
   if (!any(ok)) {
     stop("At least one period must have a finite variance and two or more responses.",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   invalid <- !is.finite(variance) & n > 1L
   if (any(invalid)) {
     stop("Missing variances are permitted only for periods with one response.",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   pooled <- sum((n[ok] - 1) * variance[ok]) / sum(n[ok] - 1)
   sigma2 <- ifelse(ok, variance, pooled)
-  out <- data.frame(relative_period = as.integer(day), n = as.integer(n),
-                    mean = as.numeric(mean), variance = sigma2,
-                    mean_variance = sigma2 / n)
+  out <- data.frame(
+    relative_period = as.integer(day), n = as.integer(n),
+    mean = as.numeric(mean), variance = sigma2,
+    mean_variance = sigma2 / n
+  )
   out[order(out$relative_period), , drop = FALSE]
 }
 
@@ -91,8 +98,10 @@ prediction_weights <- function(fit_days, fit_n, target_day) {
 }
 
 build_design <- function(ps, window, target,
-                         pre_periods = c("consecutive", "observed")) {
+                         pre_periods = c("observed", "consecutive"),
+                         event_day = c("include", "exclude")) {
   pre_periods <- match.arg(pre_periods)
+  event_day <- match.arg(event_day)
   days <- ps$relative_period
   pre <- days[days < 0]
   index <- function(x) match(x, days)
@@ -109,11 +118,26 @@ build_design <- function(ps, window, target,
     fit_windows <- lapply(starts, function(start) seq.int(start, length.out = window))
     forecast_windows <- lapply(fit_windows, function(fit) max(fit) + forecast_offsets)
   } else {
-    n_windows <- length(pre) - 2L * window + 1L
+    skipped_observed_periods <- as.integer(event_day == "exclude")
+    n_windows <- length(pre) - 2L * window - skipped_observed_periods + 1L
     starts <- seq_len(n_windows)
     fit_windows <- lapply(starts, function(j) pre[j:(j + window - 1L)])
-    forecast_windows <- lapply(starts, function(j) pre[(j + window):(j + 2L * window - 1L)])
+    forecast_windows <- lapply(starts, function(j) {
+      first <- j + window + skipped_observed_periods
+      pre[first:(first + window - 1L)]
+    })
   }
+  window_map <- data.frame(
+    fit_start = vapply(fit_windows, min, integer(1)),
+    fit_end = vapply(fit_windows, max, integer(1)),
+    fit_span = vapply(fit_windows, function(x) max(x) - min(x) + 1L, integer(1)),
+    forecast_start = vapply(forecast_windows, min, integer(1)),
+    forecast_end = vapply(forecast_windows, max, integer(1)),
+    forecast_span = vapply(
+      forecast_windows,
+      function(x) max(x) - min(x) + 1L, integer(1)
+    )
+  )
   for (j in seq_along(fit_windows)) {
     fit <- fit_windows[[j]]
     forecast <- forecast_windows[[j]]
@@ -125,8 +149,10 @@ build_design <- function(ps, window, target,
       row[index(fit)] <- row[index(fit)] - weights
       k <- k + 1L
       rows[[k]] <- row
-      map[[k]] <- c(fit_start = fit[1L], forecast_period = target_day,
-                    horizon = target_day - max(fit))
+      map[[k]] <- c(
+        fit_start = fit[1L], forecast_period = target_day,
+        horizon = target_day - max(fit)
+      )
     }
   }
   reference_rows <- do.call(rbind, rows)
@@ -139,10 +165,12 @@ build_design <- function(ps, window, target,
     effect_rows[j, ] <- -counterfactual_rows[j, ]
     effect_rows[j, index(target[j])] <- effect_rows[j, index(target[j])] + 1
   }
-  list(reference_rows = reference_rows, reference_map = reference_map,
-       effect_rows = effect_rows, counterfactual_rows = counterfactual_rows,
-       average_row = colMeans(effect_rows), final_fit = final_fit,
-       target = target, n_windows = length(fit_windows))
+  list(
+    reference_rows = reference_rows, reference_map = reference_map,
+    effect_rows = effect_rows, counterfactual_rows = counterfactual_rows,
+    average_row = colMeans(effect_rows), final_fit = final_fit,
+    target = target, n_windows = length(fit_windows), windows = window_map
+  )
 }
 
 honest_interval <- function(point_row, point, reference_rows, reference_errors,
@@ -169,20 +197,26 @@ estimate_design <- function(built, ps, alpha) {
   effect <- sum(built$average_row * ybar)
   se <- sqrt(sum(built$average_row^2 * variance))
   z <- stats::qnorm(1 - alpha / 2)
-  ci <- honest_interval(built$average_row, effect, built$reference_rows,
-                        reference_errors, variance, alpha)
-  estimate <- data.frame(effect = effect,
-                         std_error = se,
-                         conventional_low = effect - z * se,
-                         conventional_high = effect + z * se,
-                         bias_bound = max(abs(reference_errors)),
-                         conf_low = unname(ci[1L]), conf_high = unname(ci[2L]),
-                         n_windows = built$n_windows,
-                         n_reference = length(reference_errors))
+  ci <- honest_interval(
+    built$average_row, effect, built$reference_rows,
+    reference_errors, variance, alpha
+  )
+  estimate <- data.frame(
+    effect = effect,
+    std_error = se,
+    conventional_low = effect - z * se,
+    conventional_high = effect + z * se,
+    bias_bound = max(abs(reference_errors)),
+    conf_low = unname(ci[1L]), conf_high = unname(ci[2L]),
+    n_windows = built$n_windows,
+    n_reference = length(reference_errors)
+  )
   reference <- cbind(built$reference_map, error = reference_errors)
-  fitted <- data.frame(relative_period = built$target,
-                       observed = ybar[match(built$target, ps$relative_period)],
-                       counterfactual = as.numeric(built$counterfactual_rows %*% ybar))
+  fitted <- data.frame(
+    relative_period = built$target,
+    observed = ybar[match(built$target, ps$relative_period)],
+    counterfactual = as.numeric(built$counterfactual_rows %*% ybar)
+  )
   list(estimate = estimate, reference = reference, fitted = fitted)
 }
 
@@ -192,11 +226,15 @@ estimate_days <- function(built, ps, alpha) {
   reference_errors <- as.numeric(built$reference_rows %*% ybar)
   effects <- as.numeric(built$effect_rows %*% ybar)
   intervals <- t(vapply(seq_along(effects), function(j) {
-    honest_interval(built$effect_rows[j, ], effects[j], built$reference_rows,
-                    reference_errors, variance, alpha)
+    honest_interval(
+      built$effect_rows[j, ], effects[j], built$reference_rows,
+      reference_errors, variance, alpha
+    )
   }, numeric(2)))
-  data.frame(relative_period = built$target,
-             observed = ybar[match(built$target, ps$relative_period)],
-             counterfactual = as.numeric(built$counterfactual_rows %*% ybar),
-             effect = effects, conf_low = intervals[, 1L], conf_high = intervals[, 2L])
+  data.frame(
+    relative_period = built$target,
+    observed = ybar[match(built$target, ps$relative_period)],
+    counterfactual = as.numeric(built$counterfactual_rows %*% ybar),
+    effect = effects, conf_low = intervals[, 1L], conf_high = intervals[, 2L]
+  )
 }

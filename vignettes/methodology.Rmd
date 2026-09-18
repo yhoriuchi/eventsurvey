@@ -34,11 +34,18 @@ explicit and empirically examines comparable pre-event forecasts.
 
 ## Matched rolling forecasts
 
-Let `s` be `window`. The final analysis fits a line to the last `s`
+Let `s` be `window`. The final analysis fits a line to the last `s` observed
 pre-event periods and forecasts the next `s` periods. Before the event, every
-available block of `s` consecutive periods is used to forecast its next `s`
-periods. This produces errors at exactly the horizons required by the final
-analysis. At least `2s` consecutive pre-event periods are necessary.
+available block of `s` observed survey periods is used to forecast its next
+`s` observed periods. The final forecast likewise uses the first `s` observed
+event/post-event periods. Actual time values enter every fit and forecast, so gaps
+are not compressed; window spans and missing periods are retained as
+diagnostics. At least `2s` observed pre-event periods are necessary.
+
+This observed-period definition is the default because survey fieldwork is
+often sparse. Setting `pre_periods = "consecutive"` instead restricts the
+procedure to uninterrupted periods on the chosen time scale. Analysts should
+report the definition and examine whether conclusions are sensitive to it.
 
 ## Honest inference
 

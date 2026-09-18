@@ -8,3 +8,5 @@ _source/
 project_history/
 *.Rcheck/
 *.tar.gz
+output/
+tmp/
