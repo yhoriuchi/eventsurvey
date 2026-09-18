@@ -6,7 +6,7 @@
 \usage{
 \method{plot}{eventsurvey}(
   x,
-  type = c("counterfactual", "effects", "diagnostics", "daily", "counts"),
+  type = c("counterfactual", "effects", "diagnostics", "coverage", "daily", "counts"),
   inner_level = NULL,
   ...
 )
@@ -15,8 +15,11 @@
 \item{x}{An \code{eventsurvey} object.}
 
 \item{type}{Plot type: the observed and extrapolated outcome path,
-period-specific effects, rolling reference errors, all period means, or
-respondent counts by period.}
+period-specific effects, rolling reference errors, combined outcome and
+response coverage, all period means, or respondent counts by period. In
+the combined coverage plot, gray bars are scaled relative to the largest
+period sample and placed in a strip below the observed outcome series.
+A blue dashed vertical line marks event period 0 in every time-axis plot.}
 
 \item{inner_level}{Optional inner confidence level for an effects plot, such
 as \code{0.90} when the fitted object contains 95\% intervals. The outer

@@ -1,5 +1,6 @@
 ---
 title: "Frequently Asked Questions"
+description: "Find concise answers to common questions about study design, data, estimation, and interpretation."
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Frequently Asked Questions}
@@ -13,17 +14,30 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 
 ## Is an event automatically as-if randomized?
 
+<details>
+<summary>No. Identification still depends on the fieldwork design and explicit assumptions.</summary>
+
 No. Surprise does not rule out time trends, changes in who answers the survey,
 or other contemporaneous events. Identification depends on the fieldwork
 design and explicit assumptions, not the label attached to the event.
 
+</details>
+
 ## Why not compare pooled means before and after?
+
+<details>
+<summary>A pooled comparison assumes that the no-event outcome would have stayed constant.</summary>
 
 That comparison assumes the no-event outcome would have been constant. A
 linear extrapolation allows a short-run pre-existing trend and makes its
 forecast performance inspectable.
 
+</details>
+
 ## How much pre-event data are needed?
+
+<details>
+<summary>Use at least twice the chosen window length.</summary>
 
 At least twice the chosen window length. A window of six requires at least 12
 observed pre-event periods. More history produces more matched reference
@@ -32,43 +46,92 @@ forecasts and a more informative diagnostic.
 If `event_day = "exclude"`, one extra pre-event period is required because the
 rolling diagnostic reproduces the same skipped-period gap.
 
+</details>
+
 ## How does the package handle sparse survey dates?
+
+<details>
+<summary>Sparse observed dates are supported by default, without interpolation.</summary>
 
 The default forms windows from consecutive observed survey periods. It still
 uses their actual time values, automatically detects missing dates, and reports
 the elapsed span of each window. Thus, six observed survey days may span more
 than six calendar days, but the intervening gaps are not silently compressed.
 
+</details>
+
 ## What if there were no interviews on one day?
+
+<details>
+<summary>The package records the gap and uses the remaining observed periods.</summary>
 
 The default continues with the remaining observed periods and records the date
 in `fit$settings$missing_pre_periods` or
 `fit$settings$missing_forecast_periods`. It does not interpolate an outcome for
 the empty date. Use `fit$windows` and the fitted settings to inspect elapsed
 fitting and forecasting spans. If uninterrupted dates are required by the
-design, set `pre_periods = "consecutive"`; the package then stops and identifies
+design, set `schedule = "consecutive"`; the package then stops and identifies
 the gaps.
 
+</details>
+
 ## What should I do with the event day?
+
+<details>
+<summary>Choose the event-day rule according to when respondents became exposed.</summary>
 
 Use `event_day = "include"` when its respondents are considered exposed and
 `event_day = "exclude"` when forecasting should begin the next period. If the
 event day belongs in the aggregate forecast but its day-specific interpretation
 is ambiguous, use `report_event_day = FALSE` and explain that choice.
 
+</details>
+
 ## Does the package select the window automatically?
+
+<details>
+<summary>No. Choose and preferably prespecify a substantively defensible window.</summary>
 
 No. Choose it from subject-matter knowledge and, ideally, prespecify it. Report
 sensitivity over plausible choices rather than optimizing significance.
 
+</details>
+
 ## Why is the honest interval wider?
+
+<details>
+<summary>It accounts for sampling variation and calibrated extrapolation error.</summary>
 
 The conventional interval accounts only for sampling variation conditional on
 the line being correct. The honest interval also allows calibrated forecast
 error.
 
+</details>
+
 ## Can I add covariates or nonlinear trends?
 
-Not in the current public API. The research source explored those options, but
-their rolling fits require a fully validated joint covariance calculation.
-The public release favors a smaller, auditable implementation.
+<details>
+<summary>Not yet; use a simple outcome ~ time formula.</summary>
+
+Not in the current public API. Both `eventsurvey()` and
+`eventsurvey_summary()` require exactly two untransformed column names, such as
+`y ~ day` or `period_mean ~ day`. They reject formula transformations,
+nonlinear time terms, additional variables, and interactions. For example,
+`y ~ I(day^2)`, `y ~ day + covariate`, and `y ~ day * group` are invalid.
+
+The research source explored broader specifications, but their rolling fits
+require fully validated uncertainty calculations. The public release favors a
+smaller, auditable implementation. A substantively justified transformed
+outcome may be created as an explicit numeric column before fitting; the
+reported effect is then in that column's units.
+
+</details>
+
+## Also see
+
+- [Getting Started](getting-started.html) for the shortest path to an estimate
+  and report.
+- [Methodology and Assumptions](methodology.html) for the full identification
+  and inference discussion.
+- [Reading an HTML Report](reading-html-reports.html) for interpretation of
+  package output and diagnostics.

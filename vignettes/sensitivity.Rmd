@@ -1,5 +1,6 @@
 ---
 title: "Sensitivity Analysis"
+description: "Assess how conclusions change across defensible window lengths and analysis choices."
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Sensitivity Analysis}
@@ -36,3 +37,11 @@ Useful prespecified checks include plausible window lengths, including versus
 excluding the event period, restrictions motivated by known fieldwork breaks,
 and outcomes or subgroups chosen before inspecting results. Do not select the
 window that produces the smallest p-value or narrowest interval.
+
+## Also see
+
+- [Methodology and Assumptions](methodology.html) for how the window defines
+  the fitting and forecasting exercise.
+- [Getting Started](getting-started.html) for the default analysis and report.
+- [Frequently Asked Questions](faq.html) for concise guidance on choosing and
+  prespecifying the window.

@@ -1,5 +1,6 @@
 ---
 title: "Complete Example Workflow"
+description: "Follow a complete analysis from data inspection through estimates, plots, and sensitivity checks."
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Complete Example Workflow}
@@ -84,3 +85,11 @@ A transparent analysis should report:
 6. the window-average and period-specific estimates with honest intervals;
 7. sensitivity to substantively plausible window lengths; and
 8. limitations of event exogeneity and respondent-timing assumptions.
+
+## Also see
+
+- [Getting Started](getting-started.html) for the shortest package workflow.
+- [Reading an HTML Report](reading-html-reports.html) for interpretation of the
+  report produced from a fitted analysis.
+- [Methodology and Assumptions](methodology.html) for the estimand,
+  counterfactual restriction, and honest interval.

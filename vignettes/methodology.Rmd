@@ -1,5 +1,6 @@
 ---
 title: "Methodology and Assumptions"
+description: "Understand the counterfactual estimand, trend extrapolation, rolling forecasts, and identifying assumptions."
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Methodology and Assumptions}
@@ -43,7 +44,7 @@ are not compressed; window spans and missing periods are retained as
 diagnostics. At least `2s` observed pre-event periods are necessary.
 
 This observed-period definition is the default because survey fieldwork is
-often sparse. Setting `pre_periods = "consecutive"` instead restricts the
+often sparse. Setting `schedule = "consecutive"` instead restricts the
 procedure to uninterrupted periods on the chosen time scale. Analysts should
 report the definition and examine whether conclusions are sensitive to it.
 
@@ -68,3 +69,14 @@ The procedure does not prove event exogeneity, repair event-caused changes in
 survey participation, or protect against a no-event path that departs more
 sharply than any matched pre-event forecast. It quantifies a transparent class
 of extrapolation errors; it does not replace design knowledge.
+
+## Also see
+
+- [Getting Started](getting-started.html) for the shortest path from data to
+  an estimate and report.
+- [Sparse Survey Schedules](sparse-survey-schedules.html) for the distinction
+  between observed-period and consecutive-calendar windows.
+- [Sensitivity Analysis](sensitivity.html) for comparing defensible window
+  lengths and analysis choices.
+- [Frequently Asked Questions](faq.html) for concise answers about design,
+  data, estimation, and interpretation.

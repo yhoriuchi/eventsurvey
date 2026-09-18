@@ -1,0 +1,179 @@
+---
+title: "Understanding Automatic Diagnostics"
+description: "Understand each automatic data and design check, and learn what to do when a result needs review."
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Understanding Automatic Diagnostics}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 6.8,
+  fig.height = 3.8
+)
+```
+
+`eventsurvey()` and `eventsurvey_summary()` automatically check features of
+the data and design that deserve attention. The checks help users notice
+calendar gaps, small period samples, pooled variance substitutions, limited
+pre-event information, and windows that cover longer calendar spans than the
+requested number of observed periods.
+
+Each check is labeled `OK` or `Review`. A `Review` status is not an error and
+does not change the estimate. It asks the analyst to confirm that the data and
+design are appropriate for the application.
+
+## The five checks
+
+| Check | `Review` is shown when | Suggested response |
+|:--|:--|:--|
+| Calendar coverage | One or more calendar periods are unobserved in the analysis span | Confirm that `schedule = "observed"` matches the design, or use `schedule = "consecutive"` when uninterrupted calendar periods are required. Do not create outcomes for dates with no respondents. |
+| Responses per period | Any observed period contains fewer than 10 responses | Inspect the affected period means and interpret them cautiously. The threshold is a prompt for review, not a universal minimum sample-size rule. |
+| Variance information | A period-specific variance is unavailable | Review the affected periods. The package substitutes the pooled within-period variance for uncertainty calculations; it does not create outcomes. |
+| Reference windows | Fewer than five rolling pre-event reference windows are available | Interpret the misspecification bound cautiously and use a longer pre-event series when available. |
+| Elapsed window spans | A window containing the requested number of observed periods spans more calendar periods than requested | Decide whether the longer elapsed fitting and forecasting horizons remain substantively comparable. |
+
+## Inspect the diagnostics
+
+Begin with a complete simulated daily schedule.
+
+```{r setup}
+library(eventsurvey)
+
+complete <- simulate_eventsurvey(
+  seed = 2026,
+  pre = 30,
+  post = 10,
+  respondents = 40
+)
+
+fit_complete <- eventsurvey(y ~ day, complete)
+fit_complete$diagnostics
+```
+
+All five checks are `OK` in this example. The same table appears near the top
+of the HTML report created by `eventsurvey_report()`.
+
+```{r report, eval = FALSE}
+fit_complete |>
+  eventsurvey_report("eventsurvey-report.html")
+```
+
+## Sparse survey dates
+
+Many surveys do not receive responses every calendar day. Here, several
+entire dates are removed from the complete data.
+
+```{r sparse-data}
+unobserved_days <- c(-24, -17, -11, -4, 2, 6)
+sparse <- subset(complete, !day %in% unobserved_days)
+
+fit_sparse <- eventsurvey(y ~ day, sparse)
+fit_sparse$diagnostics
+```
+
+```{r sparse-coverage, fig.show = 'hold', out.width = '49%', fig.cap = 'Response counts for complete daily fieldwork (left) and sparse fieldwork (right). Missing dates remain unobserved; the package does not interpolate outcomes.'}
+plot(fit_complete, type = "counts")
+plot(fit_sparse, type = "counts")
+```
+
+The default `schedule = "observed"` forms windows from ordered dates with
+responses while retaining their actual time values in estimation. The
+calendar-coverage check reports the missing dates. The elapsed-span check
+reports that a six-observed-period window may cover more than six calendar
+periods. Neither check fills the gaps.
+
+If the design instead requires consecutive calendar periods, request that
+restriction explicitly. The sparse example then stops and identifies the
+missing periods rather than silently changing the analysis.
+
+```{r consecutive, error = TRUE}
+eventsurvey(y ~ day, sparse, schedule = "consecutive")
+```
+
+## Small period samples and pooled variance
+
+`eventsurvey_summary()` accepts one row per observed period. A period with a
+single respondent has no estimable within-period sample variance, so its
+variance can be recorded as `NA`. The package uses the pooled within-period
+variance from the remaining periods and flags both the small count and the
+substitution.
+
+```{r summary-data}
+daily <- aggregate(y ~ day, complete, function(z) {
+  c(mean = mean(z), n = length(z), variance = stats::var(z))
+})
+
+daily <- data.frame(
+  day = daily$day,
+  mean = daily$y[, "mean"],
+  n = as.integer(daily$y[, "n"]),
+  variance = daily$y[, "variance"]
+)
+
+daily$n[daily$day == -10] <- 1L
+daily$variance[daily$day == -10] <- NA_real_
+
+fit_small_period <- eventsurvey_summary(mean ~ day, daily)
+fit_small_period$diagnostics
+```
+
+This substitution affects the uncertainty calculation for that period. It
+does not replace its observed mean or add respondents.
+
+## Limited pre-event history
+
+The estimator needs at least twice the requested window length in observed
+pre-event periods. Meeting that minimum can leave only one rolling reference
+window, whereas a longer pre-event series provides more opportunities to
+evaluate comparable forecasts.
+
+```{r limited-history}
+short_history <- simulate_eventsurvey(
+  seed = 2027,
+  pre = 12,
+  post = 6,
+  respondents = 40
+)
+
+fit_short_history <- eventsurvey(y ~ day, short_history)
+fit_short_history$diagnostics
+```
+
+The analysis remains estimable, but the `Reference windows` check asks the
+analyst to interpret the bias bound cautiously. When additional pre-event
+observations genuinely exist, including them provides a stronger diagnostic
+record.
+
+## A compact review workflow
+
+The following workflow keeps diagnostics close to the results:
+
+```{r workflow, eval = FALSE}
+fit <- eventsurvey(outcome ~ interview_date, survey_data,
+  event_time = as.Date("2026-01-15")
+)
+
+fit$diagnostics
+summary(fit)
+plot(fit, type = "counts")
+plot(fit, type = "diagnostics")
+```
+
+For every `Review` row, document whether the feature reflects the intended
+survey schedule and why the resulting comparison remains appropriate. Change
+the design only for a substantive reason; the diagnostics do not select a
+preferred specification automatically.
+
+## Also see
+
+- [Reading an HTML Report](reading-html-reports.html) to see where diagnostics
+  appear alongside the estimates and figures.
+- [Methodology and Assumptions](methodology.html) for what the diagnostics can
+  and cannot establish.
+- [Sparse Survey Schedules](sparse-survey-schedules.html) for complete and
+  irregular-fieldwork examples.

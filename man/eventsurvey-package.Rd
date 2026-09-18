@@ -27,9 +27,9 @@ Useful links:
 Authors:
 \itemize{
   \item Yusaku Horiuchi \email{yusaku.horiuchi@gmail.com} (\href{https://orcid.org/0000-0003-0295-4089}{ORCID})
-  \item Guoer Liu
-  \item Jieun Oh
-  \item Yuki Shiraito
+  \item Guoer Liu (\href{https://orcid.org/0000-0002-7309-9801}{ORCID})
+  \item Jieun Oh (\href{https://orcid.org/0000-0003-2810-0145}{ORCID})
+  \item Yuki Shiraito (\href{https://orcid.org/0000-0003-0264-1138}{ORCID})
 }
 
 }

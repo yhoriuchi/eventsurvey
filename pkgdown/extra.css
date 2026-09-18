@@ -1,3 +1,24 @@
+/* Keep article typography aligned with the projoint website. */
+main h1 {
+  font-size: 2.5rem;
+  line-height: 1.2;
+}
+
+main h2 {
+  font-size: 1.75rem;
+  line-height: 1.2;
+}
+
+main h3 {
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+
+main details > summary {
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+}
+
 @media print {
   @page {
     size: letter;

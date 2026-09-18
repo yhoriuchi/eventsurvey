@@ -7,29 +7,34 @@
 eventsurvey_summary(
   formula,
   data,
-  n,
-  variance,
-  event_time,
+  n = n,
+  variance = variance,
+  event_time = 0,
   window = 6L,
   event_day = c("include", "exclude"),
   report_event_day = TRUE,
   alpha = 0.05,
-  pre_periods = c("observed", "consecutive")
+  schedule = c("observed", "consecutive")
 )
 }
 \arguments{
-\item{formula}{A two-sided formula of the form \code{period_mean ~ time}.}
+\item{formula}{A two-sided formula of the form \code{period_mean ~ time}, using
+two untransformed column names.}
 
 \item{data}{A data frame with one row per observed period.}
 
-\item{n}{The unquoted name of the column containing respondent counts.}
+\item{n}{The unquoted name of the column containing respondent counts.
+Defaults to a column named \code{n}.}
 
 \item{variance}{The unquoted name of the column containing the within-period
-sample variance of the outcome. It may be \code{NA} when \code{n} is one; the
-pooled within-period variance is then used for uncertainty calculations.}
+sample variance of the outcome. Defaults to a column named \code{variance}. It
+may be \code{NA} when \code{n} is one; the pooled within-period variance is then used
+for uncertainty calculations.}
 
 \item{event_time}{The event period, in the same scale and class as the time
-variable.}
+variable. Defaults to \code{0}, which is appropriate when time is coded
+relative to the event. Supply the event date or period explicitly when
+using an absolute time scale.}
 
 \item{window}{Integer length of both the final pre-event fitting window and
 the post-event forecast horizon. Must be at least 2.}
@@ -45,7 +50,7 @@ ambiguous.}
 
 \item{alpha}{Significance level for confidence intervals.}
 
-\item{pre_periods}{How rolling pre-event windows are formed. The default,
+\item{schedule}{How rolling fitting and forecasting windows are formed. The default,
 \code{"observed"}, forms fitting and forecasting windows from ordered periods
 containing responses and supports sparse survey schedules. \code{"consecutive"}
 requires every period on the time scale to be represented. In either mode,
@@ -70,8 +75,9 @@ daily <- data.frame(
   day = daily$day, mean = daily$y[, "mean"],
   n = daily$y[, "n"], variance = daily$y[, "variance"]
 )
-fit <- eventsurvey_summary(mean ~ day, daily,
-  n = n, variance = variance,
-  event_time = 0, window = 6
-)
+fit <- eventsurvey_summary(mean ~ day, daily)
+}
+\seealso{
+\code{vignette("summary-data", package = "eventsurvey")} for a complete
+period-level workflow and an equivalence demonstration.
 }

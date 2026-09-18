@@ -1,0 +1,85 @@
+---
+title: "`r params$title`"
+params:
+  title: "Event Survey Report"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    self_contained: true
+---
+
+<style>
+body { color: #212529; }
+h1, h2, h3, h4 { color: inherit; }
+a { color: #0D6EFD; }
+.main-container { max-width: 1050px; }
+table { width: 100%; }
+.tocify .active { background-color: #337AB7; }
+.eventsurvey-call {
+  background: #F8F9FA;
+  border-left: 4px solid #ADB5BD;
+  padding: 0.8rem 1rem;
+  margin-bottom: 1.2rem;
+  font-family: monospace;
+}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 8,
+  fig.height = 5,
+  dpi = 144
+)
+options(knitr.duplicate.label = "allow")
+
+format_number <- function(x, digits = 3L) {
+  formatC(x, format = "f", digits = digits)
+}
+
+format_periods <- function(x) {
+  if (!length(x)) "None" else paste(x, collapse = ", ")
+}
+```
+
+```{r multi-analysis-note, results='asis'}
+if (length(fits) > 1L) {
+  cat(paste0(
+    "> **Multiple-analysis note.** Each analysis in this report is estimated ",
+    "separately. The report does not pool events or outcomes, and its ",
+    "confidence intervals are not adjusted for multiple comparisons.\n\n"
+  ))
+}
+```
+
+```{r analyses, results='asis'}
+for (i in seq_along(fits)) {
+  child_environment <- new.env(parent = environment())
+  child_environment$fit <- fits[[i]]
+  child_environment$analysis_name <- names(fits)[i]
+  child_environment$multiple_analyses <- length(fits) > 1L
+  cat(knitr::knit_child(
+    section_template,
+    envir = child_environment,
+    quiet = TRUE
+  ), sep = "\n")
+}
+```
+
+## Reproducibility
+
+```{r reproducibility}
+reproducibility <- data.frame(
+  Item = c("eventsurvey version", "R version", "Generated"),
+  Value = c(
+    as.character(utils::packageVersion("eventsurvey")),
+    R.version.string,
+    format(Sys.time(), "%Y-%m-%d %H:%M %Z")
+  ),
+  check.names = FALSE
+)
+knitr::kable(reproducibility, align = c("l", "l"))
+```

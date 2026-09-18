@@ -7,21 +7,24 @@
 eventsurvey(
   formula,
   data,
-  event_time,
+  event_time = 0,
   window = 6L,
   event_day = c("include", "exclude"),
   report_event_day = TRUE,
   alpha = 0.05,
-  pre_periods = c("observed", "consecutive")
+  schedule = c("observed", "consecutive")
 )
 }
 \arguments{
-\item{formula}{A two-sided formula of the form \code{outcome ~ time}.}
+\item{formula}{A two-sided formula of the form \code{outcome ~ time}, using two
+untransformed column names.}
 
 \item{data}{A data frame with one row per respondent.}
 
 \item{event_time}{The event period, in the same scale and class as the time
-variable.}
+variable. Defaults to \code{0}, which is appropriate when time is coded
+relative to the event. Supply the event date or period explicitly when
+using an absolute time scale.}
 
 \item{window}{Integer length of both the final pre-event fitting window and
 the post-event forecast horizon. Must be at least 2.}
@@ -37,7 +40,7 @@ ambiguous.}
 
 \item{alpha}{Significance level for confidence intervals.}
 
-\item{pre_periods}{How rolling pre-event windows are formed. The default,
+\item{schedule}{How rolling fitting and forecasting windows are formed. The default,
 \code{"observed"}, forms fitting and forecasting windows from ordered periods
 containing responses and supports sparse survey schedules. \code{"consecutive"}
 requires every period on the time scale to be represented. In either mode,
@@ -46,7 +49,8 @@ models use the actual time values rather than compressing gaps.}
 \value{
 An object of class \code{eventsurvey} containing the estimate, honest and
 conventional intervals, day-specific results, reference forecast errors,
-rolling-window diagnostics, daily summaries, and analysis settings.
+rolling-window diagnostics, automatic design and data checks, daily
+summaries, and analysis settings.
 }
 \description{
 \code{eventsurvey()} extrapolates the pre-event outcome trend into a short
@@ -55,14 +59,26 @@ misspecification and constructs an honest confidence interval using the
 union--intersection method.
 }
 \details{
-The formula must contain one outcome and one time variable, for example
-\code{support ~ interview_date}. Time may be an integer-like numeric variable,
-a \code{Date}, or a \code{POSIXt} value. The current implementation deliberately uses
-a time-only linear model; covariates are not yet supported.
+The formula must contain untransformed column names for one outcome and one
+time variable, for example \code{support ~ interview_date}. Time may be an
+integer-like numeric variable, a \code{Date}, or a \code{POSIXt} value. The current
+implementation deliberately uses a time-only linear model; transformations,
+interactions, and covariates are not yet supported.
+
+Every fitted object contains automatic diagnostics. A check receives
+\code{"Review"} status when calendar periods are missing, any observed period has
+fewer than 10 responses, a within-period variance must be pooled, fewer than
+five rolling reference windows are available, or an observed-period window
+spans more calendar periods than requested. These descriptive flags do not
+alter estimates or invalidate an analysis.
 }
 \examples{
 dat <- simulate_eventsurvey(seed = 10)
-fit <- eventsurvey(y ~ day, dat, event_time = 0, window = 6)
+fit <- eventsurvey(y ~ day, dat)
 fit
 summary(fit)
+}
+\seealso{
+\code{vignette("automatic-diagnostics", package = "eventsurvey")} for
+examples of every automatic check and guidance on \code{Review} statuses.
 }

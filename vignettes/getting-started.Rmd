@@ -1,5 +1,6 @@
 ---
 title: "Getting Started"
+description: "Fit a first event-survey model, inspect the results, and create a shareable report."
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Getting Started}
@@ -21,25 +22,65 @@ event.
 
 Each row should be a respondent. The outcome must be numeric, and time must be
 an integer-like numeric variable, a `Date`, or a `POSIXt`. The package includes
-a simulator so the full workflow can be run without private research data.
+the ready-to-use `sample_data` dataset so the full workflow can be run without
+private research data or a separate simulation step.
 
 ```{r}
 library(eventsurvey)
-
-dat <- simulate_eventsurvey(seed = 10)
-head(dat)
+head(sample_data)
 ```
+
+In this dataset, `y` is the simulated survey outcome for each respondent and
+`day` is the interview day relative to the event: negative values are before
+the event, 0 is the event day, and positive values are after the event.
 
 ## 2. Estimate the effect
 
-The formula contains the outcome and time variables. `window = 6` fits a
-linear model on the final six pre-event days and forecasts six event/post-event
-days. The same six-by-six operation is repeated before the event to construct
-matched forecast errors.
+The formula contains the outcome and time variables. By default,
+`event_time = 0` and `window = 6`: the model uses the final six observed
+pre-event periods and forecasts six event/post-event periods. The same
+six-by-six operation is repeated before the event to construct matched
+forecast errors.
+
+The formula must use exactly two **untransformed column names** in the form
+`outcome ~ time`. Thus, `y ~ day` is valid. Formulas such as `log(y) ~ day`,
+`y ~ I(day^2)`, `y ~ day + group`, and `y ~ day * group` are rejected because
+formula transformations, nonlinear time terms, covariates, and interactions
+are not supported by the current methodology. If a substantively meaningful
+transformed outcome is needed, create it as a clearly named numeric column
+before fitting; the resulting effect is measured in that column's units.
 
 ```{r}
-fit <- eventsurvey(y ~ day, dat, event_time = 0, window = 6)
+fit <- eventsurvey(y ~ day, sample_data)
 fit
+```
+
+The fitted object automatically checks calendar coverage, responses per
+period, variance information, the number of rolling reference windows, and
+elapsed fitting and forecasting spans. `summary(fit)` and the HTML report show
+each check as `OK` or `Review`. A `Review` flag is descriptive: it does not
+change the estimate or automatically invalidate the analysis.
+See [Understanding Automatic Diagnostics](automatic-diagnostics.html) for
+examples of every check and guidance on responding to a `Review` status.
+
+For a one-command workflow, pipe the fitted analysis to
+`eventsurvey_report()`. Without a filename, the package creates a temporary
+self-contained HTML report. The default `open = interactive()` opens that
+report automatically in an interactive session such as the RStudio console,
+but not in `Rscript`, tests, continuous integration, or other batch runs. The
+HTML file is created either way. Set `open = TRUE` or `open = FALSE` to
+override this behavior.
+
+```{r report-example, eval=FALSE}
+eventsurvey(y ~ day, sample_data) |>
+  eventsurvey_report()
+```
+
+To keep the report, provide an output filename:
+
+```{r report-save-example, eval=FALSE}
+eventsurvey(y ~ day, sample_data) |>
+  eventsurvey_report("eventsurvey-report.html")
 ```
 
 The printed interval is the honest bounded-misspecification-error interval.
@@ -55,7 +96,7 @@ plot(fit, type = "counterfactual")
 
 Dark points are observed daily means. The coral line is the fitted pre-event
 trend and its continuation. Open points mark the forecast no-event means;
-teal vertical gaps are the day-specific estimates.
+blue vertical gaps are the day-specific estimates.
 
 ```{r effects}
 plot(fit, type = "effects")
@@ -79,12 +120,12 @@ it in the aggregate estimate while hiding its day-specific result.
 
 ```{r}
 fit_after <- eventsurvey(
-  y ~ day, dat, event_time = 0, window = 6,
+  y ~ day, sample_data, event_time = 0, window = 6,
   event_day = "exclude"
 )
 
 fit_hidden <- eventsurvey(
-  y ~ day, dat, event_time = 0, window = 6,
+  y ~ day, sample_data, event_time = 0, window = 6,
   report_event_day = FALSE
 )
 ```
@@ -94,3 +135,14 @@ fieldwork and event timing, not from whichever result is most favorable.
 When the event period is excluded, the diagnostic also skips one period between
 each rolling fit and its forecasts; this requires `2 * window + 1` pre-event
 periods.
+
+## Also see
+
+- [Preparing Survey Fieldwork Data](data-preparation.html) for variable,
+  timing, and data-format requirements.
+- [Reading an HTML Report](reading-html-reports.html) for guidance on every
+  estimate, diagnostic, and figure in the report.
+- [Understanding Automatic Diagnostics](automatic-diagnostics.html) for the
+  meaning of each `OK` and `Review` check.
+- [Complete Example Workflow](example-workflow.html) for a longer analysis
+  with plots and sensitivity checks.

@@ -1,14 +1,17 @@
 Package: eventsurvey
 Title: Causal Inference for Events During Surveys
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R:
     c(
       person("Yusaku", "Horiuchi", role = c("aut", "cre"),
              email = "yusaku.horiuchi@gmail.com",
              comment = c(ORCID = "0000-0003-0295-4089")),
-      person("Guoer", "Liu", role = "aut"),
-      person("Jieun", "Oh", role = "aut"),
-      person("Yuki", "Shiraito", role = "aut")
+      person("Guoer", "Liu", role = "aut",
+             comment = c(ORCID = "0000-0002-7309-9801")),
+      person("Jieun", "Oh", role = "aut",
+             comment = c(ORCID = "0000-0003-2810-0145")),
+      person("Yuki", "Shiraito", role = "aut",
+             comment = c(ORCID = "0000-0003-0264-1138"))
     )
 Description: Provides tools for estimating causal effects when an event
     occurs while a survey is in the field. The workflow models
@@ -17,6 +20,7 @@ Description: Provides tools for estimating causal effects when an event
     sampling uncertainty and bounded forecast misspecification.
 License: MIT + file LICENSE
 Encoding: UTF-8
+LazyData: true
 Depends:
     R (>= 4.1.0)
 Imports:

@@ -1,14 +1,24 @@
-# eventsurvey <img src="man/figures/logo.svg" align="right" width="150" alt="eventsurvey logo" />
+<p align="center" style="padding-top: 2rem;">
+  <img src="man/figures/logo.svg" width="190" alt="eventsurvey logo" />
+</p>
 
-`eventsurvey` estimates short-run causal effects when an event occurs while a
-survey is in the field. It extrapolates the observed pre-event trend, compares
-that no-event counterfactual with post-event survey means, and uses matched
-rolling forecasts to account for extrapolation error.
+<p align="center">
+  <a href="https://github.com/yhoriuchi/eventsurvey/actions/workflows/R-CMD-check.yaml"><img src="https://github.com/yhoriuchi/eventsurvey/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check status" /></a>
+  <img src="https://img.shields.io/badge/CRAN-not%20published-lightgrey" alt="CRAN not published" />
+  <img src="https://img.shields.io/badge/downloads-not%20available-lightgrey" alt="Downloads not available" />
+</p>
+
+## Causal inference for events during survey fieldwork
+
+`eventsurvey` estimates how survey outcomes change when an event occurs during
+fieldwork. It learns the pre-event trend, projects what would have happened
+without the event, and compares that counterfactual with the observed
+post-event outcomes. The package provides estimates, uncertainty intervals,
+automatic diagnostics, figures, and a shareable HTML report.
 
 ## Installation
 
-The repository is being prepared for publication. Once it is public, install
-the development version with:
+Install the development version from GitHub:
 
 ```r
 install.packages("remotes")
@@ -17,59 +27,54 @@ remotes::install_github("yhoriuchi/eventsurvey")
 
 ## Quick start
 
-The interface needs a respondent-level outcome, an equally spaced time
-variable, an event time, and one window length.
-
 ```r
 library(eventsurvey)
-
-survey_data <- simulate_eventsurvey(seed = 10)
-fit <- eventsurvey(y ~ day, survey_data, event_time = 0, window = 6)
-
-fit
-plot(fit)
-plot(fit, type = "effects")
-plot(fit, type = "diagnostics")
+fit <- eventsurvey(y ~ day, sample_data)
 ```
 
-The `window` argument is used symmetrically: each model is fit to that many
-observed pre-event periods and forecasts the next `window` observed periods.
-The actual time values are retained, so missing dates are not compressed.
-The fitted object reports detected pre-event and forecast gaps and the elapsed
-span of each rolling window. At least `2 * window` observed pre-event periods
-and `window` observed forecast periods are required.
-Skipping the event period requires one additional pre-event period so the
-rolling diagnostic can reproduce the same one-period gap.
+In `sample_data`, `y` is the survey outcome for each respondent and `day` is
+the interview day relative to the event: negative values are before the event,
+0 is the event day, and positive values are after the event.
 
-For fieldwork conducted every day, use
-`pre_periods = "consecutive"` to require an uninterrupted calendar sequence.
-This strict mode stops and identifies any missing pre-event periods.
+Create a complete, self-contained HTML report with one additional command:
 
-## What the estimate means
+```r
+eventsurvey_report(fit)
+```
 
-The post-event mean is observed. The missing quantity is the mean that would
-have been observed on the same dates without the event. `eventsurvey`
-estimates that path with a local linear extrapolation. Its honest interval
-combines sampling variation with a data-driven bound based on the largest
-matched pre-event forecast error.
-
-The current release implements the manuscript's validated time-only linear
-specification. Covariate adjustment and alternative trends are not exposed as
-public options until their joint uncertainty calculations are validated.
-
-When respondent-level records cannot be redistributed,
-`eventsurvey_summary()` accepts one row per period with the response count,
-mean, and within-period variance. The package includes documented summary data
-for the CC0-licensed Epifanio--Giani--Ivandic application. For the
-Bateson--Weintraub application, the website provides a preparation recipe that
-authorized AmericasBarometer users can run locally without redistributing the
-source data.
+The fitted object checks the data and design automatically, and the HTML report
+brings the main estimates, diagnostics, and figures together in one file.
 
 ## Learn more
 
-Start with [Getting Started](https://yhoriuchi.github.io/eventsurvey/articles/getting-started.html),
-then see the [complete workflow](https://yhoriuchi.github.io/eventsurvey/articles/example-workflow.html),
-[sparse survey schedules](https://yhoriuchi.github.io/eventsurvey/articles/sparse-survey-schedules.html),
-[published applications](https://yhoriuchi.github.io/eventsurvey/articles/published-applications.html),
-[methodology](https://yhoriuchi.github.io/eventsurvey/articles/methodology.html),
-and [sensitivity analysis](https://yhoriuchi.github.io/eventsurvey/articles/sensitivity.html).
+- [Getting Started](articles/getting-started.html) — Fit a model and
+  create a report.
+- [Reading an HTML Report](articles/reading-html-reports.html) — Interpret the
+  estimates, diagnostics, and figures.
+- [Methodology](articles/methodology.html) — Understand the estimand,
+  assumptions, and uncertainty procedure.
+- [Examples](articles/published-applications.html) — See the
+  workflow applied to published studies.
+
+Browse the [complete article library](articles/index.html) or the
+[function reference](reference/index.html).
+
+## Additional Info
+
+### Upcoming features
+
+The current version estimates the effect of one event occurring during one
+survey fieldwork period. Future versions may extend the method to repeated
+events and to pooling comparable events across fieldwork periods—for example,
+designs studying multiple high-level visits. These extensions require new
+work on the estimand, dependence across events, and uncertainty.
+
+Other potential features include covariate adjustment, alternative trend
+specifications, survey weights, clustered uncertainty, and richer workflows
+for multiple outcomes and subgroups. Each requires additional methodological
+development and validation before becoming a public package option.
+
+### Comments, questions, or suggestions?
+
+Please check the [existing GitHub issues](https://github.com/yhoriuchi/eventsurvey/issues).
+If your question or suggestion is not already covered, please open a new issue.

@@ -1,5 +1,6 @@
 ---
 title: "Preparing Survey Fieldwork Data"
+description: "Prepare respondent-level data, time variables, event timing, and survey schedules."
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Preparing Survey Fieldwork Data}
@@ -13,6 +14,34 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 
 `eventsurvey()` expects one respondent per row. Prepare a numeric outcome and
 one equally spaced time variable before fitting.
+
+## Formula requirements
+
+Use exactly one outcome column and one time column:
+
+```{r, eval = FALSE}
+fit <- eventsurvey(outcome ~ time, data = survey_data)
+```
+
+Both sides of the formula must be untransformed column names. The following
+specifications are intentionally rejected:
+
+```{r, eval = FALSE}
+eventsurvey(log(outcome) ~ time, survey_data)       # transformed in formula
+eventsurvey(outcome ~ I(time^2), survey_data)       # nonlinear time term
+eventsurvey(outcome ~ time + covariate, survey_data) # additional variable
+eventsurvey(outcome ~ time * group, survey_data)    # interaction
+```
+
+This restriction keeps the fitted model aligned with the package's currently
+validated time-only linear methodology. To analyze a substantively justified
+transformation of the outcome, create an explicit numeric column first and use
+its name in the formula. The package does not currently support nonlinear time
+trends, covariate adjustment, or interactions.
+
+The same rule applies to period-level input: use
+`eventsurvey_summary(period_mean ~ time, data = period_data)` with simple
+column names.
 
 ## Dates
 
@@ -57,7 +86,7 @@ When the design requires uninterrupted calendar days, request strict checking:
 
 ```{r}
 strict_fit <- eventsurvey(y ~ day, dat, event_time = 0, window = 6,
-                          pre_periods = "consecutive")
+                          schedule = "consecutive")
 ```
 
 Strict mode stops and lists missing pre-event periods. Do not remove a date
@@ -67,3 +96,12 @@ operations or a prespecified design rule.
 See [Sparse Survey Schedules](sparse-survey-schedules.html) for a complete
 simulation comparing uninterrupted and irregular fieldwork, including fitted
 counterfactuals and gap diagnostics.
+
+## Also see
+
+- [Getting Started](getting-started.html) to fit a model after preparing the
+  required outcome and time variables.
+- [Methodology and Assumptions](methodology.html) for the estimand and the role
+  of observed-period versus consecutive-calendar windows.
+- [Estimating from Period-Level Summary Data](summary-data.html) when only
+  period counts, means, and variances are available.

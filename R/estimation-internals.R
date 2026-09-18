@@ -7,6 +7,29 @@ validate_scalar <- function(x, name, lower = -Inf, upper = Inf,
   invisible(x)
 }
 
+validate_simple_formula <- function(formula, data) {
+  if (!is.data.frame(data)) {
+    stop("`data` must be a data frame.", call. = FALSE)
+  }
+  if (!inherits(formula, "formula") || length(formula) != 3L ||
+    !is.symbol(formula[[2L]]) || !is.symbol(formula[[3L]])) {
+    stop(
+      "`formula` must use untransformed column names in the form outcome ~ time.",
+      call. = FALSE
+    )
+  }
+  variables <- c(as.character(formula[[2L]]), as.character(formula[[3L]]))
+  missing_variables <- setdiff(variables, names(data))
+  if (length(missing_variables)) {
+    stop(
+      "Formula variable(s) not found in `data`: ",
+      paste(missing_variables, collapse = ", "), ".",
+      call. = FALSE
+    )
+  }
+  invisible(variables)
+}
+
 relative_period <- function(time, event_time) {
   if (inherits(time, "POSIXt")) time <- as.Date(time)
   if (inherits(event_time, "POSIXt")) event_time <- as.Date(event_time)
@@ -46,7 +69,8 @@ period_stats <- function(data) {
   sigma2 <- ifelse(ok, s2, pooled)
   data.frame(
     relative_period = days, n = n, mean = ybar,
-    variance = sigma2, mean_variance = sigma2 / n
+    variance = sigma2, mean_variance = sigma2 / n,
+    variance_imputed = !ok
   )
 }
 
@@ -86,9 +110,126 @@ summary_period_stats <- function(day, n, mean, variance) {
   out <- data.frame(
     relative_period = as.integer(day), n = as.integer(n),
     mean = as.numeric(mean), variance = sigma2,
-    mean_variance = sigma2 / n
+    mean_variance = sigma2 / n,
+    variance_imputed = !ok
   )
   out[order(out$relative_period), , drop = FALSE]
+}
+
+analysis_diagnostics <- function(ps, settings, built) {
+  rows <- list()
+  add <- function(check, status, detail, recommendation) {
+    rows[[length(rows) + 1L]] <<- data.frame(
+      check = check,
+      status = status,
+      detail = detail,
+      recommendation = recommendation,
+      stringsAsFactors = FALSE
+    )
+  }
+
+  n_missing <- settings$n_missing_pre_periods +
+    settings$n_missing_forecast_periods
+  if (n_missing == 0L) {
+    add(
+      "Calendar coverage", "OK",
+      "No calendar periods are missing from the analysis span.",
+      "No action needed."
+    )
+  } else {
+    add(
+      "Calendar coverage", "Review",
+      paste0(
+        settings$n_missing_pre_periods, " pre-event and ",
+        settings$n_missing_forecast_periods,
+        " forecast calendar period(s) are unobserved."
+      ),
+      paste0(
+        "Confirm that schedule = \"", settings$schedule,
+        "\" matches the intended design; outcomes are not interpolated."
+      )
+    )
+  }
+
+  low_count <- sum(ps$n < 10L)
+  singleton_count <- sum(ps$n == 1L)
+  if (low_count == 0L) {
+    add(
+      "Responses per period", "OK",
+      paste0("The minimum observed-period sample size is ", min(ps$n), "."),
+      "No action needed."
+    )
+  } else {
+    add(
+      "Responses per period", "Review",
+      paste0(
+        low_count, " of ", nrow(ps),
+        " observed periods have fewer than 10 responses; ",
+        singleton_count, " have one response."
+      ),
+      "Inspect small-period means and interpret them cautiously."
+    )
+  }
+
+  imputed_count <- sum(ps$variance_imputed)
+  if (imputed_count == 0L) {
+    add(
+      "Variance information", "OK",
+      "Every observed period has an estimable within-period variance.",
+      "No action needed."
+    )
+  } else {
+    add(
+      "Variance information", "Review",
+      paste0(
+        imputed_count,
+        " observed period(s) use the pooled within-period variance because their own variance is unavailable."
+      ),
+      "Review these periods; pooled variance is used automatically without creating outcomes."
+    )
+  }
+
+  n_windows <- nrow(built$windows)
+  if (n_windows >= 5L) {
+    add(
+      "Reference windows", "OK",
+      paste0(n_windows, " rolling pre-event reference windows calibrate the bias bound."),
+      "No action needed."
+    )
+  } else {
+    add(
+      "Reference windows", "Review",
+      paste0("Only ", n_windows, " rolling pre-event reference window(s) calibrate the bias bound."),
+      "Interpret the bound cautiously and use a longer pre-event series when available."
+    )
+  }
+
+  max_fit_span <- max(c(settings$fit_span, built$windows$fit_span))
+  max_forecast_span <- max(c(
+    settings$forecast_span,
+    built$windows$forecast_span
+  ))
+  if (max_fit_span == settings$window &&
+    max_forecast_span == settings$window) {
+    add(
+      "Elapsed window spans", "OK",
+      "All fitting and forecasting windows span the requested number of calendar periods.",
+      "No action needed."
+    )
+  } else {
+    add(
+      "Elapsed window spans", "Review",
+      paste0(
+        "A ", settings$window,
+        "-period window spans as many as ", max_fit_span,
+        " fitting and ", max_forecast_span,
+        " forecasting calendar periods."
+      ),
+      "Check whether the longer elapsed horizons remain substantively comparable."
+    )
+  }
+
+  do.call(rbind, rows)
 }
 
 prediction_weights <- function(fit_days, fit_n, target_day) {
@@ -98,20 +239,20 @@ prediction_weights <- function(fit_days, fit_n, target_day) {
 }
 
 build_design <- function(ps, window, target,
-                         pre_periods = c("observed", "consecutive"),
+                         schedule = c("observed", "consecutive"),
                          event_day = c("include", "exclude")) {
-  pre_periods <- match.arg(pre_periods)
+  schedule <- match.arg(schedule)
   event_day <- match.arg(event_day)
   days <- ps$relative_period
   pre <- days[days < 0]
   index <- function(x) match(x, days)
-  final_fit <- if (pre_periods == "consecutive") -window:-1L else utils::tail(pre, window)
+  final_fit <- if (schedule == "consecutive") -window:-1L else utils::tail(pre, window)
   if (anyNA(index(final_fit))) stop("The final fitting window has missing periods.", call. = FALSE)
   m <- nrow(ps)
   rows <- list()
   map <- list()
   k <- 0L
-  if (pre_periods == "consecutive") {
+  if (schedule == "consecutive") {
     forecast_offsets <- target - max(final_fit)
     last_start <- -window - max(forecast_offsets)
     starts <- seq.int(min(pre), last_start)

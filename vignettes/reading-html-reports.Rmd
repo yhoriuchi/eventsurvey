@@ -1,0 +1,147 @@
+---
+title: "Reading an HTML Report"
+description: "Learn how to interpret each estimate, diagnostic, figure, and setting in the HTML report."
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Reading an HTML Report}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+`eventsurvey_report()` collects the estimates, diagnostics, figures, settings,
+and reproducibility information for an analysis in one self-contained HTML
+file. It does not change or re-estimate the fitted model.
+
+```{r, eval = FALSE}
+fit <- eventsurvey(y ~ day, survey_data)
+eventsurvey_report(fit)
+```
+
+## A useful reading order
+
+Read the report in four steps:
+
+1. Check the **analysis call and settings** to confirm the outcome, time
+   variable, event period, event-day rule, window, and schedule.
+2. Read the **main result**, especially the estimated average effect and honest
+   interval.
+3. Review the **automatic diagnostics, forecast diagnostics, and survey
+   coverage** before interpreting the estimate.
+4. Use the **counterfactual and period-specific figures** to see when and how
+   the observed outcomes depart from the extrapolated no-event trend.
+
+## Main result
+
+The average effect is the mean, across the reported event and post-event
+periods, of
+
+$$
+\text{observed outcome} - \text{estimated no-event outcome}.
+$$
+
+A positive estimate means that observed outcomes were higher than the
+extrapolated counterfactual; a negative estimate means that they were lower.
+The estimate and both intervals remain in the outcome's original units. For
+example, an outcome measured on a five-point scale produces effects measured
+in scale points.
+
+The table distinguishes two intervals:
+
+- The **conventional interval** reflects sampling uncertainty while treating
+  the fitted pre-event trend as correct.
+- The **honest interval** adds the bias bound calibrated from matched rolling
+  pre-event forecast errors. This is the package's primary interval.
+
+The **bias bound** is the largest absolute matched reference-forecast error.
+The counts of **reference windows** and **reference forecasts** show how much
+pre-event evidence was available to calibrate that bound.
+
+## Automatic diagnostics
+
+The diagnostic table identifies features that deserve review, including sparse
+calendar coverage, small period samples, pooled variance substitution, few
+reference windows, or observed-period windows that span more calendar time
+than requested. A **Review** status is not a failed test and does not alter the
+estimate. It is a prompt to examine the design and report relevant limitations.
+
+See [Understanding Automatic Diagnostics](automatic-diagnostics.html) for the
+trigger and recommended response for each check.
+
+## Observed and counterfactual outcomes
+
+The counterfactual figure displays the fitted pre-event trend and extends it
+into the event and post-event periods. Filled points are observed period means;
+open points are estimated outcomes under no event. Each vertical blue gap is a
+period-specific effect.
+
+This figure is most credible when the fitted pre-event trend is locally
+reasonable and the post-event departures are not better explained by changing
+respondent composition, unrelated contemporaneous events, or fieldwork
+changes.
+
+## Period-specific effects
+
+The effects figure and table show how the estimated difference evolves across
+periods. The report's main estimate averages these period-specific effects; it
+does not imply that the effect is constant over time.
+
+## Forecast diagnostics
+
+The package repeatedly fits the same model in earlier pre-event windows and
+forecasts the following observed periods. The resulting errors measure how far
+the linear extrapolation missed when no focal event had yet occurred. Large or
+systematic errors indicate that the counterfactual trend is difficult to
+forecast and widen the honest interval. The blue dashed vertical line and its
+`0` label mark the focal event; all reference forecasts appear before it.
+
+## Survey coverage
+
+The combined coverage figure shows observed period means as a line with points.
+Light-gray bars just above the x-axis show the relative number of responses in
+each period, with the tallest bar marking the period with the most responses.
+This makes unusually sparse periods visible without introducing a second axis
+or a separate panel. Missing dates remain missing: the report does not
+interpolate outcomes for dates with no respondents.
+
+The accompanying table reports the input rows, rows used, rows omitted because
+the outcome or time is missing, and the total number of responses represented.
+For period-summary input, the total is the sum of the supplied period counts.
+
+## Analysis settings and reproducibility
+
+The settings table records the choices needed to interpret and reproduce the
+analysis. The final table records the `eventsurvey` version, R version, and
+generation time. Because the output is self-contained, collaborators can open
+the HTML file without installing R or the package.
+
+## What the report does not establish
+
+The report organizes evidence; it does not make an event as-if randomized.
+Causal interpretation still requires a defensible fieldwork design and the
+assumption that, absent the event, the local pre-event trend would have
+continued over the short forecast horizon. Diagnostics evaluate forecast
+behavior but cannot rule out all contemporaneous changes or shifts in who
+responded.
+
+When one report contains several fitted objects, each is estimated separately.
+The report does not pool events or outcomes, and it does not automatically
+adjust confidence intervals for multiple comparisons.
+
+See [Methodology](methodology.html) for the estimand, extrapolation restriction,
+rolling calibration, and identifying assumptions. A link to the working paper
+can be added there and on the homepage when it is available.
+
+## Also see
+
+- [Getting Started](getting-started.html) to fit a model and create an HTML
+  report.
+- [Understanding Automatic Diagnostics](automatic-diagnostics.html) for the
+  trigger and recommended response for every diagnostic.
+- [Methodology and Assumptions](methodology.html) for the estimand,
+  counterfactual restriction, and honest interval.
+- [Examples](published-applications.html) to open complete reports using data
+  from published studies.

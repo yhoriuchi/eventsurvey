@@ -1,5 +1,6 @@
 ---
 title: "Sparse Survey Schedules"
+description: "See how observed-period and consecutive-calendar schedules behave when fieldwork is sparse."
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Sparse Survey Schedules}
@@ -68,7 +69,7 @@ plot(fit_sparse, type = "counts")
 
 ## Inspect what the package detected
 
-The default `pre_periods = "observed"` uses the requested number of dates with
+The default `schedule = "observed"` uses the requested number of dates with
 responses. It does not renumber those dates: their actual time values enter
 the trend and forecast calculations. The fitted object records every gap and
 the elapsed span of the final windows.
@@ -194,7 +195,7 @@ strict_sparse <- tryCatch(
     sparse,
     event_time = 0,
     window = 6,
-    pre_periods = "consecutive"
+    schedule = "consecutive"
   ),
   error = conditionMessage
 )
@@ -206,3 +207,12 @@ stops and identifies pre-event days -24, -17, -11, and -4 as missing. This
 makes the choice explicit:
 observed-period mode supports irregular fieldwork, whereas consecutive-period
 mode enforces an uninterrupted calendar design.
+
+## Also see
+
+- [Methodology and Assumptions](methodology.html) for the role of the schedule
+  in the estimand and rolling forecasts.
+- [Understanding Automatic Diagnostics](automatic-diagnostics.html) for the
+  coverage and elapsed-span checks produced by sparse schedules.
+- [Getting Started](getting-started.html) for the standard estimation and
+  reporting workflow.

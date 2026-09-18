@@ -1,17 +1,10 @@
 url: https://yhoriuchi.github.io/eventsurvey/
 
 development:
-  mode: unreleased
+  mode: release
 
 template:
   bootstrap: 5
-  bootswatch: flatly
-  bslib:
-    primary: "#006D77"
-    secondary: "#00535B"
-    link-color: "#006D77"
-    navbar-dark-color: "#FFFFFF"
-    navbar-dark-hover-color: "#CDEEE8"
 
 home:
   title: eventsurvey
@@ -34,39 +27,52 @@ navbar:
       href: https://github.com/yhoriuchi/eventsurvey/issues
 
 articles:
-- title: Getting Started
-  desc: Learn the event-during-survey workflow from data setup to inference.
+- title: Start Here
+  desc: Fit a first model, create a report, and learn how to read the results.
   contents:
   - getting-started
+  - reading-html-reports
+
+- title: Data and Workflows
+  desc: Prepare respondent- or period-level data and handle common fieldwork patterns.
+  contents:
   - data-preparation
+  - summary-data
+  - automatic-diagnostics
   - sparse-survey-schedules
   - example-workflow
 
-- title: Published Applications
-  desc: Reproduce the empirical applications with documented example data.
-  contents:
-  - published-applications
-  - bateson-weintraub
-  - epifanio-giani-ivandic
-
-- title: Concepts and Assumptions
-  desc: Understand the target estimand, forecast restriction, and uncertainty.
+- title: Methodology
+  desc: Understand the estimand, identifying assumptions, uncertainty, and sensitivity choices.
   contents:
   - methodology
   - sensitivity
   - faq
 
+- title: Examples
+  desc: See complete eventsurvey analyses using data from published studies.
+  contents:
+  - published-applications
+
 reference:
 - title: Estimate event effects
   contents:
   - eventsurvey
+  - eventsurvey_summary
+
+- title: Present results
+  contents:
+  - summary.eventsurvey
+  - extract.eventsurvey
   - plot.eventsurvey
+  - eventsurvey_report
+  - print.eventsurvey
 
 - title: Example data
   contents:
+  - sample_data
   - simulate_eventsurvey
   - published_examples
-  - eventsurvey_summary
 
 - title: Package
   contents:

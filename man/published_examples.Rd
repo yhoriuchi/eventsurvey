@@ -22,7 +22,7 @@ Epifanio, Giani, and Ivandic replication materials:
 \doi{10.7910/DVN/AUHSMD}.
 }
 \usage{
-data(published_examples)
+published_examples
 }
 \description{
 Period-level sufficient statistics used to reproduce the \code{eventsurvey}

@@ -9,3 +9,6 @@
 ^LICENSE\.md$
 ^output$
 ^tmp$
+^pkgdown/assets/reports$
+^_pkgdown\.yml$
+^pkgdown$

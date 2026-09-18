@@ -1,0 +1,187 @@
+```{r report-section-setup, include=FALSE}
+estimate <- fit$estimate[1L, , drop = FALSE]
+confidence_level <- 100 * (1 - fit$settings$alpha)
+analysis_call <- paste(deparse(fit$call, width.cutoff = 500L), collapse = " ")
+section_level <- if (multiple_analyses) 3L else 2L
+section_heading <- function(text) {
+  paste0(paste(rep("#", section_level), collapse = ""), " ", text)
+}
+```
+
+`r if (multiple_analyses) paste0("## ", analysis_name) else ""`
+
+<div class="eventsurvey-call">`r analysis_call`</div>
+
+`r section_heading("Main result")`
+
+The estimated window-average event effect is
+**`r format_number(estimate$effect)`**. The honest
+`r format_number(confidence_level, 0)`% confidence interval is
+**[`r format_number(estimate$conf_low)`,
+`r format_number(estimate$conf_high)`]**. Effects are expressed in the original
+units of **`r fit$settings$outcome`**.
+
+```{r main-result}
+main_result <- data.frame(
+  Quantity = c(
+    "Average effect",
+    "Standard error",
+    "Conventional interval",
+    "Bias bound",
+    "Honest interval",
+    "Reference windows",
+    "Reference forecasts"
+  ),
+  Value = c(
+    format_number(estimate$effect),
+    format_number(estimate$std_error),
+    paste0(
+      "[", format_number(estimate$conventional_low), ", ",
+      format_number(estimate$conventional_high), "]"
+    ),
+    format_number(estimate$bias_bound),
+    paste0(
+      "[", format_number(estimate$conf_low), ", ",
+      format_number(estimate$conf_high), "]"
+    ),
+    estimate$n_windows,
+    estimate$n_reference
+  ),
+  check.names = FALSE
+)
+knitr::kable(main_result, align = c("l", "r"))
+```
+
+`r section_heading("Automatic diagnostics")`
+
+These checks describe features that may deserve attention. A “Review” status
+does not invalidate the analysis and does not change any estimate. Review is
+triggered by missing calendar periods, any observed period with fewer than 10
+responses, pooled variance substitution, fewer than five rolling reference
+windows, or an observed-period window spanning more calendar time than
+requested.
+
+```{r automatic-diagnostics}
+diagnostic_table <- fit$diagnostics
+names(diagnostic_table) <- c("Check", "Status", "Detail", "Recommendation")
+knitr::kable(diagnostic_table, align = c("l", "l", "l", "l"))
+```
+
+`r section_heading("Observed and counterfactual outcomes")`
+
+The line extrapolates the fitted pre-event trend. Open points show the
+estimated no-event outcomes, and vertical gaps show period-specific effects.
+
+```{r counterfactual}
+plot(fit, type = "counterfactual")
+```
+
+`r section_heading("Period-specific effects")`
+
+```{r effects}
+plot(fit, type = "effects")
+```
+
+```{r effects-table}
+effect_table <- fit$days
+numeric_columns <- vapply(effect_table, is.numeric, logical(1))
+effect_table[numeric_columns] <- lapply(
+  effect_table[numeric_columns],
+  function(x) round(x, 3L)
+)
+knitr::kable(effect_table, align = "r")
+```
+
+`r section_heading("Forecast diagnostics")`
+
+These rolling pre-event forecast errors calibrate the misspecification bound.
+
+```{r diagnostics}
+plot(fit, type = "diagnostics")
+```
+
+`r section_heading("Survey coverage")`
+
+The line and points show observed period means. The light-gray bars just above
+the x-axis show the relative number of responses in each period; the tallest
+bar is the period with the most responses.
+
+```{r coverage-plot}
+plot(fit, type = "coverage")
+```
+
+```{r coverage-table}
+coverage <- data.frame(
+  Quantity = c(
+    "Data level",
+    "Input rows",
+    "Rows used",
+    "Rows omitted for missing outcome or time",
+    "Total responses represented",
+    "Observed periods",
+    "Minimum responses per period",
+    "Median responses per period",
+    "Maximum responses per period",
+    "Missing pre-event periods",
+    "Missing forecast periods"
+  ),
+  Value = c(
+    fit$settings$data_level,
+    fit$settings$n_input_rows,
+    fit$settings$n_used_rows,
+    fit$settings$n_omitted_rows,
+    fit$settings$total_responses,
+    nrow(fit$daily),
+    min(fit$daily$n),
+    stats::median(fit$daily$n),
+    max(fit$daily$n),
+    format_periods(fit$settings$missing_pre_periods),
+    format_periods(fit$settings$missing_forecast_periods)
+  ),
+  check.names = FALSE
+)
+knitr::kable(coverage, align = c("l", "r"))
+```
+
+`r section_heading("Analysis settings")`
+
+```{r settings}
+settings <- data.frame(
+  Setting = c(
+    "Formula",
+    "Event period",
+    "Event-period rule",
+    "Report event period",
+    "Fit and forecast window",
+    "Period schedule",
+    "Final fitting span",
+    "Final forecast span",
+    "Confidence level"
+  ),
+  Value = c(
+    paste(deparse(fit$call$formula, width.cutoff = 500L), collapse = " "),
+    as.character(fit$settings$event_time),
+    fit$settings$event_day,
+    fit$settings$report_event_day,
+    paste(fit$settings$window, "observed periods"),
+    fit$settings$schedule,
+    paste(fit$settings$fit_span, "periods on the time scale"),
+    paste(fit$settings$forecast_span, "periods on the time scale"),
+    paste0(format_number(confidence_level, 0), "%")
+  ),
+  check.names = FALSE
+)
+knitr::kable(settings, align = c("l", "l"))
+```
+
+`r section_heading("Interpretation limits")`
+
+The estimate compares observed outcomes after the event with an extrapolation
+of the pre-event trend. A causal interpretation requires that, absent the
+event, this trend would have remained a credible short-run counterfactual.
+The analysis does not by itself rule out other contemporaneous changes or
+event-related changes in who responds to the survey. The honest interval
+accounts for sampling uncertainty and the package's bounded forecast
+misspecification procedure; it does not make these design assumptions true.
+
+`r if (multiple_analyses) "This analysis is estimated separately from the other analyses in this report; the report does not pool them and does not apply a multiple-comparison adjustment." else "This report concerns one fitted event-survey analysis."`
