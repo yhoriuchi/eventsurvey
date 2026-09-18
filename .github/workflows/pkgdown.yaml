@@ -36,4 +36,5 @@ jobs:
         with:
           path: ./docs
       - name: Deploy to GitHub Pages
+        if: ${{ github.event.repository.private == false }}
         uses: actions/deploy-pages@v4
