@@ -1,7 +1,19 @@
 test_that("sample_data is ready for a two-line first analysis", {
   expect_s3_class(sample_data, "data.frame")
-  expect_named(sample_data, c("day", "y", "counterfactual", "effect"))
-  expect_equal(sample_data, simulate_eventsurvey(seed = 10))
+  expect_named(sample_data, c("day", "y"))
+  expect_type(sample_data$y, "integer")
+  expect_setequal(unique(sample_data$y), 1:5)
+
+  simulated <- simulate_eventsurvey(seed = 10)
+  expected <- data.frame(
+    day = simulated$day,
+    y = as.integer(cut(
+      simulated$y,
+      breaks = c(-Inf, 45, 48, 51, 54, Inf),
+      labels = FALSE
+    ))
+  )
+  expect_equal(sample_data, expected)
 
   fit <- eventsurvey(y ~ day, sample_data)
   expect_s3_class(fit, "eventsurvey")
@@ -13,8 +25,9 @@ test_that("the core estimator returns coherent results", {
 
   expect_s3_class(fit, "eventsurvey")
   expect_equal(nrow(fit$days), 6)
-  expect_equal(fit$estimate$n_windows, 13)
-  expect_equal(fit$estimate$n_reference, 78)
+  expect_equal(fit$days$relative_period, 1:6)
+  expect_equal(fit$estimate$n_windows, 12)
+  expect_equal(fit$estimate$n_reference, 72)
   expect_lt(fit$estimate$conf_low, fit$estimate$effect)
   expect_gt(fit$estimate$conf_high, fit$estimate$effect)
   expect_gte(fit$estimate$conf_low, -Inf)
@@ -107,7 +120,7 @@ test_that("standard extractors return the fitted effect and intervals", {
   expect_error(confint(fit, level = 0.90), "fitted confidence level")
 })
 
-test_that("core estimators use conventional defaults", {
+test_that("core estimators exclude the event period by default", {
   dat <- simulate_eventsurvey(seed = 19, pre = 20, post = 7)
   respondent_default <- eventsurvey(y ~ day, dat)
   respondent_explicit <- eventsurvey(
@@ -115,7 +128,7 @@ test_that("core estimators use conventional defaults", {
     dat,
     event_time = 0,
     window = 6,
-    event_day = "include",
+    event_day = "exclude",
     report_event_day = TRUE,
     alpha = 0.05,
     schedule = "observed"
@@ -136,7 +149,7 @@ test_that("core estimators use conventional defaults", {
     variance = variance,
     event_time = 0,
     window = 6,
-    event_day = "include",
+    event_day = "exclude",
     report_event_day = TRUE,
     alpha = 0.05,
     schedule = "observed"
@@ -146,10 +159,12 @@ test_that("core estimators use conventional defaults", {
   expect_equal(respondent_default$settings, respondent_explicit$settings)
   expect_equal(summary_default$estimate, summary_explicit$estimate)
   expect_equal(summary_default$settings, summary_explicit$settings)
+  expect_equal(respondent_default$settings$event_day, "exclude")
+  expect_equal(summary_default$settings$event_day, "exclude")
 })
 
 test_that("linear period means are extrapolated exactly", {
-  dat <- expand.grid(day = -12:5, respondent = 1:4)
+  dat <- expand.grid(day = -13:6, respondent = 1:4)
   dat$y <- 3 + 0.5 * dat$day + c(-1, -0.5, 0.5, 1)[dat$respondent]
   fit <- eventsurvey(y ~ day, dat, event_time = 0, window = 6)
 
@@ -174,6 +189,7 @@ test_that("the event period can be forecast but hidden from day results", {
   dat <- simulate_eventsurvey(seed = 12, pre = 20, post = 8)
   fit <- eventsurvey(y ~ day, dat,
     event_time = 0, window = 5,
+    event_day = "include",
     report_event_day = FALSE
   )
 
@@ -212,13 +228,16 @@ test_that("calendar gaps are diagnosed and strict mode remains available", {
 test_that("insufficient history fails clearly", {
   dat <- simulate_eventsurvey(seed = 13, pre = 12, post = 6)
   expect_error(
-    eventsurvey(y ~ day, dat[dat$day >= -7, ], 0, window = 4),
+    eventsurvey(
+      y ~ day, dat[dat$day >= -7, ], 0, window = 4,
+      event_day = "include"
+    ),
     "At least 8"
   )
-  expect_error(eventsurvey(y ~ day, dat[dat$day >= -8, ], 0,
-    window = 4,
-    event_day = "exclude"
-  ), "At least 9")
+  expect_error(
+    eventsurvey(y ~ day, dat[dat$day >= -8, ], 0, window = 4),
+    "At least 9"
+  )
   expect_error(
     eventsurvey(y ~ day, dat[dat$day >= 0, ], 0, window = 4),
     "no pre-event"
@@ -230,7 +249,7 @@ test_that("sparse forecast dates are diagnosed and strict mode rejects them", {
   gapped <- dat[dat$day != 2, ]
   fit <- eventsurvey(y ~ day, gapped, 0, window = 4)
 
-  expect_equal(fit$days$relative_period, c(0L, 1L, 3L, 4L))
+  expect_equal(fit$days$relative_period, c(1L, 3L, 4L, 5L))
   expect_equal(fit$settings$missing_forecast_periods, 2L)
   expect_equal(fit$settings$n_missing_forecast_periods, 1L)
   expect_equal(fit$settings$forecast_span, 5L)
@@ -312,7 +331,8 @@ test_that("published application summaries reproduce manuscript tables", {
   privacy <- subset(published_examples, grepl("privacy", outcome))
   fit_p <- eventsurvey_summary(mean ~ day, privacy,
     n = n, variance = variance, event_time = 0, window = 5,
-    report_event_day = FALSE, schedule = "observed"
+    event_day = "include", report_event_day = FALSE,
+    schedule = "observed"
   )
   expect_equal(round(fit_p$days$effect, 3), c(-0.115, -0.050, -0.512, -0.050))
   expect_equal(round(fit_p$estimate$bias_bound, 3), 0.780)
@@ -321,7 +341,8 @@ test_that("published application summaries reproduce manuscript tables", {
   procedural <- subset(published_examples, grepl("procedural", outcome))
   fit_r <- eventsurvey_summary(mean ~ day, procedural,
     n = n, variance = variance, event_time = 0, window = 7,
-    report_event_day = FALSE, schedule = "observed"
+    event_day = "include", report_event_day = FALSE,
+    schedule = "observed"
   )
   expect_equal(
     round(fit_r$days$effect, 3),
@@ -368,7 +389,7 @@ test_that("automatic diagnostics identify design and data issues", {
   expect_contains(review_checks, "Calendar coverage")
   expect_contains(review_checks, "Elapsed window spans")
 
-  limited_fit <- eventsurvey(y ~ day, complete[complete$day >= -12, ])
+  limited_fit <- eventsurvey(y ~ day, complete[complete$day >= -13, ])
   expect_equal(limited_fit$estimate$n_windows, 1L)
   expect_equal(
     limited_fit$diagnostics$status[

@@ -11,7 +11,7 @@ eventsurvey_summary(
   variance = variance,
   event_time = 0,
   window = 6L,
-  event_day = c("include", "exclude"),
+  event_day = c("exclude", "include"),
   report_event_day = TRUE,
   alpha = 0.05,
   schedule = c("observed", "consecutive")
@@ -39,14 +39,15 @@ using an absolute time scale.}
 \item{window}{Integer length of both the final pre-event fitting window and
 the post-event forecast horizon. Must be at least 2.}
 
-\item{event_day}{Whether the event period is included in the forecast
-horizon (\code{"include"}) or skipped so forecasting begins one period later
-(\code{"exclude"}).}
+\item{event_day}{Whether the event period is excluded so forecasting begins
+one period later (\code{"exclude"}, the default) or included in the forecast
+horizon (\code{"include"}). Exclusion is the safer default because exposure is
+often ambiguous for respondents interviewed during the event period.}
 
 \item{report_event_day}{If \code{FALSE}, an included event period remains in the
 window-average estimate but is omitted from the printed day-specific
-results and plots. This is useful when exposure during the event period is
-ambiguous.}
+results and plots. This argument applies only when
+\code{event_day = "include"}.}
 
 \item{alpha}{Significance level for confidence intervals.}
 

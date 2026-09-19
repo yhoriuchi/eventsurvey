@@ -58,12 +58,31 @@ For timestamps, the package converts `POSIXt` values to calendar dates.
 Normalize time zones and decide how interviews spanning midnight should be
 classified before analysis.
 
+## Event-period exposure
+
+The default `event_day = "exclude"` omits relative period 0 from the forecast
+window and begins estimation with the first observed period after the event.
+This is the safer choice when a period combines respondents interviewed before
+and after the event or when exact within-period interview timing is unknown.
+
+Use `event_day = "include"` only when period-0 respondents can defensibly be
+classified as exposed. If period 0 belongs in the window-average estimand but
+should not appear as a day-specific result, also set
+`report_event_day = FALSE`. Record the rule and its substantive justification
+before comparing results.
+
 ## Outcomes and missingness
 
-Binary variables, numeric scales, and continuous outcomes can be analyzed if
-a mean is substantively meaningful. Recode special missing values to `NA`.
-Rows with missing outcome or time are omitted with a warning; report that
-decision and the resulting daily counts.
+Binary outcomes coded 0/1, ordered survey responses coded with numeric values
+such as 1--5, and continuous outcomes can be analyzed when their period means
+are substantively meaningful. The estimator reports differences in those
+original coded units: for example, changes in proportions on a 0--1 outcome
+(multiply by 100 for percentage points) or scale-point changes on a 1--5
+outcome. A factor or character response must first be recoded deliberately;
+for an ordinal item, interpreting means assumes that the chosen numerical
+spacing is meaningful. Recode special missing values to `NA`. Rows with
+missing outcome or time are omitted with a warning; report that decision and
+the resulting daily counts.
 
 ## Sparse and irregular fieldwork
 

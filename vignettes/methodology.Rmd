@@ -36,12 +36,18 @@ explicit and empirically examines comparable pre-event forecasts.
 ## Matched rolling forecasts
 
 Let `s` be `window`. The final analysis fits a line to the last `s` observed
-pre-event periods and forecasts the next `s` periods. Before the event, every
-available block of `s` observed survey periods is used to forecast its next
-`s` observed periods. The final forecast likewise uses the first `s` observed
-event/post-event periods. Actual time values enter every fit and forecast, so gaps
-are not compressed; window spans and missing periods are retained as
-diagnostics. At least `2s` observed pre-event periods are necessary.
+pre-event periods. By default, it excludes the event period and forecasts the
+first `s` observed periods strictly after the event. Each pre-event reference
+exercise mirrors this operation: it fits `s` observed periods, skips one
+observed period, and forecasts the next `s`. Actual time values enter every fit
+and forecast, so gaps are not compressed; window spans and missing periods are
+retained as diagnostics. This default requires at least `2s + 1` observed
+pre-event periods.
+
+Set `event_day = "include"` only when respondents in the event period can
+defensibly be treated as exposed. The forecast then begins at period 0,
+reference exercises do not skip a period, and at least `2s` observed pre-event
+periods are required.
 
 This observed-period definition is the default because survey fieldwork is
 often sparse. Setting `schedule = "consecutive"` instead restricts the

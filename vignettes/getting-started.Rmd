@@ -30,17 +30,22 @@ library(eventsurvey)
 head(sample_data)
 ```
 
-In this dataset, `y` is the simulated survey outcome for each respondent and
-`day` is the interview day relative to the event: negative values are before
-the event, 0 is the event day, and positive values are after the event.
+In this dataset, `y` is a simulated five-category survey response coded from 1
+(lowest) to 5 (highest), and `day` is the interview day relative to the event:
+negative values are before the event, 0 is the event day, and positive values
+are after the event.
+Only these observed variables are included. The no-event counterfactual and
+event effects are quantities to be estimated, not columns supplied to
+`eventsurvey()`.
 
 ## 2. Estimate the effect
 
 The formula contains the outcome and time variables. By default,
-`event_time = 0` and `window = 6`: the model uses the final six observed
-pre-event periods and forecasts six event/post-event periods. The same
-six-by-six operation is repeated before the event to construct matched
-forecast errors.
+`event_time = 0`, `event_day = "exclude"`, and `window = 6`: the model uses the
+final six observed pre-event periods, skips the event period, and forecasts
+the first six observed post-event periods. The rolling pre-event exercises
+reproduce this six-period fit, one-period gap, and six-period forecast to
+construct matched forecast errors.
 
 The formula must use exactly two **untransformed column names** in the form
 `outcome ~ time`. Thus, `y ~ day` is valid. Formulas such as `log(y) ~ day`,
@@ -114,26 +119,30 @@ of the same extrapolation task used after the event.
 
 ## Event-day conventions
 
-By default, relative period 0 is included. If respondents interviewed during
-the event period had ambiguous exposure, either skip it completely or retain
-it in the aggregate estimate while hiding its day-specific result.
+By default, relative period 0 is excluded because respondents interviewed
+during the event period often have ambiguous exposure. Forecasting therefore
+begins with the first observed period after the event. Include period 0 only
+when the event timing and fieldwork make its exposure status defensible.
 
 ```{r}
-fit_after <- eventsurvey(
+fit_including_event <- eventsurvey(
   y ~ day, sample_data, event_time = 0, window = 6,
-  event_day = "exclude"
+  event_day = "include"
 )
 
 fit_hidden <- eventsurvey(
   y ~ day, sample_data, event_time = 0, window = 6,
+  event_day = "include",
   report_event_day = FALSE
 )
 ```
 
-These choices answer different questions and should be made from the survey's
-fieldwork and event timing, not from whichever result is most favorable.
-When the event period is excluded, the diagnostic also skips one period between
-each rolling fit and its forecasts; this requires `2 * window + 1` pre-event
+The second alternative retains the event period in the window-average
+estimate but suppresses its day-specific display; use it only when that
+estimand is substantively intended. These choices should follow the survey's
+fieldwork and event timing, not whichever result is most favorable. Under the
+default exclusion rule, the diagnostic also skips one period between each
+rolling fit and its forecasts, requiring `2 * window + 1` observed pre-event
 periods.
 
 ## Also see

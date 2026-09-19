@@ -36,8 +36,7 @@ Read the report in four steps:
 
 ## Main result
 
-The average effect is the mean, across the reported event and post-event
-periods, of
+The average effect is the mean, across the fitted forecast periods, of
 
 $$
 \text{observed outcome} - \text{estimated no-event outcome}.
@@ -74,9 +73,11 @@ trigger and recommended response for each check.
 ## Observed and counterfactual outcomes
 
 The counterfactual figure displays the fitted pre-event trend and extends it
-into the event and post-event periods. Filled points are observed period means;
-open points are estimated outcomes under no event. Each vertical blue gap is a
-period-specific effect.
+into the forecast periods. By default these begin in the first observed period
+after the event; the settings table records any explicit decision to include
+the event period. Filled points are observed period means; open points are
+estimated outcomes under no event. Each vertical blue gap is a period-specific
+effect.
 
 This figure is most credible when the fitted pre-event trend is locally
 reasonable and the post-event departures are not better explained by changing

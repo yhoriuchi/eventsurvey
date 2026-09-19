@@ -27,13 +27,14 @@
 #'   using an absolute time scale.
 #' @param window Integer length of both the final pre-event fitting window and
 #'   the post-event forecast horizon. Must be at least 2.
-#' @param event_day Whether the event period is included in the forecast
-#'   horizon (`"include"`) or skipped so forecasting begins one period later
-#'   (`"exclude"`).
+#' @param event_day Whether the event period is excluded so forecasting begins
+#'   one period later (`"exclude"`, the default) or included in the forecast
+#'   horizon (`"include"`). Exclusion is the safer default because exposure is
+#'   often ambiguous for respondents interviewed during the event period.
 #' @param report_event_day If `FALSE`, an included event period remains in the
 #'   window-average estimate but is omitted from the printed day-specific
-#'   results and plots. This is useful when exposure during the event period is
-#'   ambiguous.
+#'   results and plots. This argument applies only when
+#'   `event_day = "include"`.
 #' @param schedule How rolling fitting and forecasting windows are formed. The default,
 #'   `"observed"`, forms fitting and forecasting windows from ordered periods
 #'   containing responses and supports sparse survey schedules. `"consecutive"`
@@ -54,7 +55,7 @@
 #' fit
 #' summary(fit)
 eventsurvey <- function(formula, data, event_time = 0, window = 6L,
-                        event_day = c("include", "exclude"),
+                        event_day = c("exclude", "include"),
                         report_event_day = TRUE, alpha = 0.05,
                         schedule = c("observed", "consecutive")) {
   cl <- match.call()
@@ -196,7 +197,7 @@ eventsurvey <- function(formula, data, event_time = 0, window = 6L,
 eventsurvey_summary <- function(formula, data, n = n, variance = variance,
                                 event_time = 0,
                                 window = 6L,
-                                event_day = c("include", "exclude"),
+                                event_day = c("exclude", "include"),
                                 report_event_day = TRUE, alpha = 0.05,
                                 schedule = c("observed", "consecutive")) {
   cl <- match.call()

@@ -37,14 +37,16 @@ forecast performance inspectable.
 ## How much pre-event data are needed?
 
 <details>
-<summary>Use at least twice the chosen window length.</summary>
+<summary>The default requires twice the window length plus one period.</summary>
 
-At least twice the chosen window length. A window of six requires at least 12
-observed pre-event periods. More history produces more matched reference
-forecasts and a more informative diagnostic.
+With the default `event_day = "exclude"`, use at least twice the chosen window
+length plus one observed pre-event period. A window of six therefore requires
+at least 13 observed pre-event periods. The extra period lets each rolling
+diagnostic reproduce the one-period gap at the event. More history produces
+more matched reference forecasts and a more informative diagnostic.
 
-If `event_day = "exclude"`, one extra pre-event period is required because the
-rolling diagnostic reproduces the same skipped-period gap.
+If `event_day = "include"` is substantively justified, twice the window length
+is sufficient because there is no skipped period.
 
 </details>
 
@@ -78,12 +80,15 @@ the gaps.
 ## What should I do with the event day?
 
 <details>
-<summary>Choose the event-day rule according to when respondents became exposed.</summary>
+<summary>Exclude it by default unless exposure during that period is clear.</summary>
 
-Use `event_day = "include"` when its respondents are considered exposed and
-`event_day = "exclude"` when forecasting should begin the next period. If the
-event day belongs in the aggregate forecast but its day-specific interpretation
-is ambiguous, use `report_event_day = FALSE` and explain that choice.
+The default `event_day = "exclude"` begins forecasting in the first observed
+period after the event. This is the safer convention because respondents may
+have been interviewed before, during, or after the event within period 0. Use
+`event_day = "include"` only when those respondents can defensibly be treated
+as exposed. If period 0 belongs in the aggregate estimand but its day-specific
+display is not useful, combine `event_day = "include"` with
+`report_event_day = FALSE` and explain that choice.
 
 </details>
 

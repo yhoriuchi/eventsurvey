@@ -60,7 +60,7 @@ fit_sparse <- eventsurvey(
 ```
 
 The counts plots make the schedule difference visible. The sparse data have no
-responses on four pre-event dates and two event/post-event dates.
+responses on four pre-event dates and two post-event dates.
 
 ```{r coverage, fig.show='hold', out.width='49%', fig.cap='Response counts under complete daily fieldwork (left) and sparse fieldwork (right). The dashed line marks the event date.'}
 plot(fit_complete, type = "counts")
@@ -178,7 +178,7 @@ knitr::kable(
 
 These estimates need not be identical. Missing pre-event dates can change the
 line used for extrapolation and the reference forecast errors. Missing
-event/post-event dates can also change the estimand because the first six
+post-event dates can also change the estimand because the first six
 observed dates are not necessarily the first six calendar dates. The package
 therefore reports the targeted dates rather than implying that the two rows
 estimate exactly the same quantity.

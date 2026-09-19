@@ -139,12 +139,18 @@ fit_privacy <- eventsurvey_summary(
   variance = variance,
   event_time = 0,
   window = 5,
+  event_day = "include",
   report_event_day = FALSE,
   schedule = "observed"
 )
 
 fit_privacy$estimate
 ```
+
+This published-application reanalysis explicitly uses
+`event_day = "include"` to preserve its established estimand, while suppressing
+the ambiguous period-0 day-specific result. New analyses use the safer
+`"exclude"` default unless inclusion is substantively justified.
 
 The summary interface protects data access only to the extent that the
 released summaries satisfy the relevant license, consent, disclosure, and

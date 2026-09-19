@@ -17,6 +17,12 @@ They are package reanalyses, not reproductions of every model in the original
 articles. Each report contains estimates, diagnostics, figures, survey
 coverage, and analysis settings.
 
+To preserve the established application-specific estimands, these reports
+explicitly include the event period in the window-average estimate while
+suppressing its day-specific result. This differs from the package's safer
+default for new analyses, which excludes the event period when within-period
+exposure is unclear.
+
 ## Example reports
 
 | Example | Event and outcome | Report |

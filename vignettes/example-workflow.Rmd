@@ -37,9 +37,10 @@ unobserved dates rather than silently compressing a Friday-to-Monday gap.
 
 ## Prespecify the forecasting operation
 
-We use six days for both fitting and forecasting. With 30 pre-event days, the
-package can reproduce this task in `30 - 2 * 6 + 1 = 19` rolling windows, each
-with six forecast errors.
+We use six days for both fitting and forecasting. The default skips the event
+period, so each pre-event reference exercise reproduces the same one-period
+gap. With 30 pre-event days, the package can reproduce this task in
+`30 - 2 * 6 = 18` rolling windows, each with six forecast errors.
 
 ```{r}
 fit <- eventsurvey(y ~ day, survey_data, event_time = 0, window = 6,

@@ -32,9 +32,12 @@ library(eventsurvey)
 fit <- eventsurvey(y ~ day, sample_data)
 ```
 
-In `sample_data`, `y` is the survey outcome for each respondent and `day` is
-the interview day relative to the event: negative values are before the event,
-0 is the event day, and positive values are after the event.
+In `sample_data`, `y` is a five-category survey response coded from 1 (lowest)
+to 5 (highest), and `day` is the interview day relative to the event: negative
+values are before the event, 0 is the event day, and positive values are after
+the event.
+By default, the estimator excludes day 0 because respondents' exposure is
+often unclear during the event period; forecasting begins on day 1.
 
 Create a complete, self-contained HTML report with one additional command:
 

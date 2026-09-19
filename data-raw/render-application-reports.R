@@ -44,6 +44,7 @@ fit_privacy <- eventsurvey_summary(
   data = privacy,
   event_time = 0,
   window = 5,
+  event_day = "include",
   report_event_day = FALSE,
   schedule = "observed"
 )
@@ -53,6 +54,7 @@ fit_procedural <- eventsurvey_summary(
   data = procedural,
   event_time = 0,
   window = 7,
+  event_day = "include",
   report_event_day = FALSE,
   schedule = "observed"
 )

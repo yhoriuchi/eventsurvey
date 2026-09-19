@@ -162,7 +162,13 @@ settings <- data.frame(
     paste(deparse(fit$call$formula, width.cutoff = 500L), collapse = " "),
     as.character(fit$settings$event_time),
     fit$settings$event_day,
-    fit$settings$report_event_day,
+    if (fit$settings$event_day == "exclude") {
+      "Not applicable (event period excluded)"
+    } else if (fit$settings$report_event_day) {
+      "Yes"
+    } else {
+      "No"
+    },
     paste(fit$settings$window, "observed periods"),
     fit$settings$schedule,
     paste(fit$settings$fit_span, "periods on the time scale"),

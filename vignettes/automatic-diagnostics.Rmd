@@ -127,16 +127,16 @@ does not replace its observed mean or add respondents.
 
 ## Limited pre-event history
 
-The estimator needs at least twice the requested window length in observed
-pre-event periods. Meeting that minimum can leave only one rolling reference
-window, whereas a longer pre-event series provides more opportunities to
-evaluate comparable forecasts.
+Under the default event-period exclusion rule, the estimator needs at least
+twice the requested window length plus one observed pre-event period. Meeting
+that minimum can leave only one rolling reference window, whereas a longer
+pre-event series provides more opportunities to evaluate comparable forecasts.
 
 ```{r limited-history}
 short_history <- simulate_eventsurvey(
   seed = 2027,
-  pre = 12,
-  post = 6,
+  pre = 13,
+  post = 7,
   respondents = 40
 )
 

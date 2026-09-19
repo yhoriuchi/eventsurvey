@@ -240,7 +240,7 @@ prediction_weights <- function(fit_days, fit_n, target_day) {
 
 build_design <- function(ps, window, target,
                          schedule = c("observed", "consecutive"),
-                         event_day = c("include", "exclude")) {
+                         event_day = c("exclude", "include")) {
   schedule <- match.arg(schedule)
   event_day <- match.arg(event_day)
   days <- ps$relative_period

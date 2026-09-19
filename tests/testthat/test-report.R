@@ -38,6 +38,11 @@ test_that("eventsurvey_report creates a self-contained HTML report", {
   expect_match(html, "Input rows", fixed = TRUE)
   expect_match(html, "Rows omitted for missing outcome or time", fixed = TRUE)
   expect_match(html, "Total responses represented", fixed = TRUE)
+  expect_match(
+    html,
+    "Not applicable (event period excluded)",
+    fixed = TRUE
+  )
   expect_error(
     eventsurvey_report(fit, file = output, open = FALSE),
     "already exists"
