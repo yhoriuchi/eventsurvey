@@ -19,10 +19,10 @@ long windows use more observations but impose linearity over a longer span.
 ```{r}
 library(eventsurvey)
 
-dat <- simulate_eventsurvey(seed = 21, pre = 32, post = 9)
-windows <- 3:8
+dat <- sample_data
+windows <- 3:7
 fits <- lapply(windows, function(s) {
-  eventsurvey(y ~ day, dat, event_time = 0, window = s)
+  eventsurvey(y ~ day, dat, window = s)
 })
 sensitivity <- do.call(rbind, lapply(seq_along(fits), function(i) {
   cbind(window = windows[i], fits[[i]]$estimate)

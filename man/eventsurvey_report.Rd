@@ -40,11 +40,9 @@ self-contained HTML report. Each analysis retains its own estimates,
 diagnostics, settings, and figures.
 }
 \examples{
-dat <- simulate_eventsurvey(seed = 10)
-
 if (requireNamespace("rmarkdown", quietly = TRUE) &&
     rmarkdown::pandoc_available()) {
-  report_file <- eventsurvey(y ~ day, dat) |>
+  report_file <- eventsurvey(y ~ day, sample_data) |>
     eventsurvey_report(open = FALSE)
 }
 }

@@ -53,7 +53,7 @@ The following example first estimates from respondent records and then from
 their period-level sufficient statistics.
 
 ```{r}
-respondents <- simulate_eventsurvey(seed = 10)
+respondents <- sample_data
 
 daily <- aggregate(y ~ day, respondents, function(x) {
   c(mean = mean(x), n = length(x), variance = var(x))

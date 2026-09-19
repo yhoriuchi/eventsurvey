@@ -50,8 +50,7 @@
 #' @rdname estimate_eventsurvey
 #' @export
 #' @examples
-#' dat <- simulate_eventsurvey(seed = 10)
-#' fit <- eventsurvey(y ~ day, dat)
+#' fit <- eventsurvey(y ~ day, sample_data)
 #' fit
 #' summary(fit)
 eventsurvey <- function(formula, data, event_time = 0, window = 6L,
@@ -185,8 +184,7 @@ eventsurvey <- function(formula, data, event_time = 0, window = 6L,
 #'   period-level workflow and an equivalence demonstration.
 #' @export
 #' @examples
-#' dat <- simulate_eventsurvey(seed = 10)
-#' daily <- aggregate(y ~ day, dat, function(z) {
+#' daily <- aggregate(y ~ day, sample_data, function(z) {
 #'   c(mean = mean(z), n = length(z), variance = var(z))
 #' })
 #' daily <- data.frame(
@@ -343,14 +341,12 @@ simulate_eventsurvey <- function(seed = 2026L, pre = 30L, post = 8L,
 #' @export
 #'
 #' @examples
-#' dat <- simulate_eventsurvey(seed = 10)
-#' fit <- eventsurvey(y ~ day, dat)
+#' fit <- eventsurvey(y ~ day, sample_data)
 #' print(fit)
 print.eventsurvey <- function(x, ...) {
   est <- x$estimate
   cat("Event-during-survey estimate\n")
-  cat("Formula: ")
-  print(x$formula)
+  cat("Formula: ", paste(deparse(x$formula), collapse = " "), "\n", sep = "")
   cat(
     "Window:", x$settings$window, "periods | reference forecasts:",
     est$n_reference, "\n"
@@ -390,8 +386,7 @@ print.eventsurvey <- function(x, ...) {
 #' @export
 #'
 #' @examples
-#' dat <- simulate_eventsurvey(seed = 10)
-#' fit <- eventsurvey(y ~ day, dat)
+#' fit <- eventsurvey(y ~ day, sample_data)
 #' summary(fit)
 summary.eventsurvey <- function(object, ...) {
   out <- list(

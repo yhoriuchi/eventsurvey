@@ -68,8 +68,7 @@ available. For a time-only linear model, it produces the same estimates as
 the respondent-level function.
 }
 \examples{
-dat <- simulate_eventsurvey(seed = 10)
-daily <- aggregate(y ~ day, dat, function(z) {
+daily <- aggregate(y ~ day, sample_data, function(z) {
   c(mean = mean(z), n = length(z), variance = var(z))
 })
 daily <- data.frame(

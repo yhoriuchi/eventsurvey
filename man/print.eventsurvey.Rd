@@ -20,8 +20,7 @@ schedule settings, average effect, honest confidence interval, and number
 of automatic diagnostic checks requiring review.
 }
 \examples{
-dat <- simulate_eventsurvey(seed = 10)
-fit <- eventsurvey(y ~ day, dat)
+fit <- eventsurvey(y ~ day, sample_data)
 print(fit)
 }
 \seealso{

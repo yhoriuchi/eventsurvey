@@ -18,15 +18,12 @@ assumptions that support it.
 
 ```{r}
 library(eventsurvey)
-
-survey_data <- simulate_eventsurvey(seed = 2026, pre = 30, post = 8,
-                                    respondents = 40)
 ```
 
 ## Inspect coverage before fitting
 
 ```{r coverage}
-fit_preview <- eventsurvey(y ~ day, survey_data, event_time = 0, window = 6)
+fit_preview <- eventsurvey(y ~ day, sample_data)
 plot(fit_preview, type = "daily")
 ```
 
@@ -43,8 +40,7 @@ gap. With 30 pre-event days, the package can reproduce this task in
 `30 - 2 * 6 = 18` rolling windows, each with six forecast errors.
 
 ```{r}
-fit <- eventsurvey(y ~ day, survey_data, event_time = 0, window = 6,
-                   alpha = 0.05)
+fit <- eventsurvey(y ~ day, sample_data)
 summary(fit)
 ```
 

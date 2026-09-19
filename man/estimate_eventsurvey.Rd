@@ -74,8 +74,7 @@ spans more calendar periods than requested. These descriptive flags do not
 alter estimates or invalidate an analysis.
 }
 \examples{
-dat <- simulate_eventsurvey(seed = 10)
-fit <- eventsurvey(y ~ day, dat)
+fit <- eventsurvey(y ~ day, sample_data)
 fit
 summary(fit)
 }

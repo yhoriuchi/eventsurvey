@@ -34,6 +34,14 @@ test_that("the core estimator returns coherent results", {
   expect_equal(max(abs(fit$reference$error)), fit$estimate$bias_bound)
 })
 
+test_that("compact printing omits the formula environment", {
+  fit <- eventsurvey(y ~ day, sample_data)
+  output <- capture.output(print(fit))
+
+  expect_true(any(output == "Formula: y ~ day"))
+  expect_false(any(grepl("<environment:", output, fixed = TRUE)))
+})
+
 test_that("core estimators require a simple outcome-by-time formula", {
   dat <- simulate_eventsurvey(seed = 23, pre = 20, post = 7)
   expect_error(

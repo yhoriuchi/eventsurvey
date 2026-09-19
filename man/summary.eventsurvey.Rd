@@ -23,8 +23,7 @@ diagnostics, window-average estimate, period-specific estimates, and the
 range and largest absolute value of the rolling reference forecast errors.
 }
 \examples{
-dat <- simulate_eventsurvey(seed = 10)
-fit <- eventsurvey(y ~ day, dat)
+fit <- eventsurvey(y ~ day, sample_data)
 summary(fit)
 }
 \seealso{

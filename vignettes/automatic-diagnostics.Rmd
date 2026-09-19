@@ -39,17 +39,12 @@ design are appropriate for the application.
 
 ## Inspect the diagnostics
 
-Begin with a complete simulated daily schedule.
+Begin with the complete daily schedule in `sample_data`.
 
 ```{r setup}
 library(eventsurvey)
 
-complete <- simulate_eventsurvey(
-  seed = 2026,
-  pre = 30,
-  post = 10,
-  respondents = 40
-)
+complete <- sample_data
 
 fit_complete <- eventsurvey(y ~ day, complete)
 fit_complete$diagnostics
@@ -69,7 +64,7 @@ Many surveys do not receive responses every calendar day. Here, several
 entire dates are removed from the complete data.
 
 ```{r sparse-data}
-unobserved_days <- c(-24, -17, -11, -4, 2, 6)
+unobserved_days <- c(-24, -17, -11, -4, 2)
 sparse <- subset(complete, !day %in% unobserved_days)
 
 fit_sparse <- eventsurvey(y ~ day, sparse)
@@ -133,12 +128,7 @@ that minimum can leave only one rolling reference window, whereas a longer
 pre-event series provides more opportunities to evaluate comparable forecasts.
 
 ```{r limited-history}
-short_history <- simulate_eventsurvey(
-  seed = 2027,
-  pre = 13,
-  post = 7,
-  respondents = 40
-)
+short_history <- subset(sample_data, day >= -13)
 
 fit_short_history <- eventsurvey(y ~ day, short_history)
 fit_short_history$diagnostics

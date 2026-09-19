@@ -19,8 +19,8 @@ knitr::opts_chunk$set(
 
 Survey fieldwork often does not produce responses every day. This article
 shows how `eventsurvey` handles such schedules without treating an unobserved
-date as though it contained an outcome. It compares two datasets derived from
-the same simulation:
+date as though it contained an outcome. It compares two versions of the
+bundled `sample_data`:
 
 1. a complete schedule with responses every day; and
 2. a sparse schedule with several entire survey days removed.
@@ -29,19 +29,14 @@ Because the sparse dataset is a subset of the complete dataset, respondents on
 the retained dates have exactly the same outcomes in both analyses. The only
 difference is the fieldwork schedule.
 
-## Simulate complete and sparse schedules
+## Create complete and sparse schedules
 
 ```{r setup}
 library(eventsurvey)
 
-complete <- simulate_eventsurvey(
-  seed = 2026,
-  pre = 30,
-  post = 10,
-  respondents = 400
-)
+complete <- sample_data
 
-unobserved_days <- c(-24, -17, -11, -4, 2, 6)
+unobserved_days <- c(-24, -17, -11, -4, 2)
 sparse <- subset(complete, !day %in% unobserved_days)
 
 fit_complete <- eventsurvey(
@@ -60,7 +55,7 @@ fit_sparse <- eventsurvey(
 ```
 
 The counts plots make the schedule difference visible. The sparse data have no
-responses on four pre-event dates and two post-event dates.
+responses on four pre-event dates and one post-event date.
 
 ```{r coverage, fig.show='hold', out.width='49%', fig.cap='Response counts under complete daily fieldwork (left) and sparse fieldwork (right). The dashed line marks the event date.'}
 plot(fit_complete, type = "counts")
@@ -131,27 +126,15 @@ plot(fit_complete, type = "counterfactual")
 plot(fit_sparse, type = "counterfactual")
 ```
 
-The simulations store the true event effect, so the estimated average can be
-compared with the true average over the dates targeted by each analysis.
+The two analyses can target different post-event dates, so their estimated
+effects and intervals should be compared together with their target windows.
 
 ```{r result-table, echo = FALSE}
-true_effect <- aggregate(effect ~ day, complete, mean)
-
-average_truth <- function(fit) {
-  mean(true_effect$effect[
-    match(fit$fitted$relative_period, true_effect$day)
-  ])
-}
-
 result_summary <- data.frame(
   Schedule = c("Complete", "Sparse"),
   `Target dates` = c(
     format_periods(fit_complete$fitted$relative_period),
     format_periods(fit_sparse$fitted$relative_period)
-  ),
-  `True average effect` = c(
-    average_truth(fit_complete),
-    average_truth(fit_sparse)
   ),
   `Estimated average effect` = c(
     fit_complete$estimate$effect,
@@ -171,8 +154,8 @@ result_summary <- data.frame(
 knitr::kable(
   result_summary,
   digits = 3,
-  align = c("l", "l", "r", "r", "r", "r"),
-  caption = "True and estimated average effects for each schedule-specific target window."
+  align = c("l", "l", "r", "r", "r"),
+  caption = "Estimated average effects for each schedule-specific target window."
 )
 ```
 
