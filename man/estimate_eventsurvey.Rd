@@ -16,8 +16,8 @@ eventsurvey(
 )
 }
 \arguments{
-\item{formula}{A two-sided formula of the form \code{outcome ~ time}, using two
-untransformed column names.}
+\item{formula}{A two-sided formula of the form \code{outcome ~ time}, using an
+untransformed numeric outcome column and an untransformed time column.}
 
 \item{data}{A data frame or tibble with one row per respondent.}
 
@@ -60,11 +60,15 @@ misspecification and constructs an honest confidence interval using the
 union--intersection method.
 }
 \details{
-The formula must contain untransformed column names for one outcome and one
-time variable, for example \code{support ~ interview_date}. Time may be an
-integer-like numeric variable, a \code{Date}, or a \code{POSIXt} value. The current
-implementation deliberately uses a time-only linear model; transformations,
-interactions, and covariates are not yet supported.
+The formula must contain untransformed column names for one numeric outcome
+and one time variable, for example \code{support ~ interview_date}. Binary
+outcomes coded 0/1, ordered responses coded with numeric values such as 1--5,
+and continuous outcomes are supported when their period means are
+substantively meaningful. Factor and character outcomes must first be
+deliberately recoded as numeric. Time may be an integer-like numeric
+variable, a \code{Date}, or a \code{POSIXt} value. The current implementation
+deliberately uses a time-only linear model; transformations, interactions,
+and covariates are not yet supported.
 
 Every fitted object contains automatic diagnostics. A check receives
 \code{"Review"} status when calendar periods are missing, any observed period has

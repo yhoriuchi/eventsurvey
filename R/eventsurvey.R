@@ -5,11 +5,15 @@
 #' misspecification and constructs an honest confidence interval using the
 #' union--intersection method.
 #'
-#' The formula must contain untransformed column names for one outcome and one
-#' time variable, for example `support ~ interview_date`. Time may be an
-#' integer-like numeric variable, a `Date`, or a `POSIXt` value. The current
-#' implementation deliberately uses a time-only linear model; transformations,
-#' interactions, and covariates are not yet supported.
+#' The formula must contain untransformed column names for one numeric outcome
+#' and one time variable, for example `support ~ interview_date`. Binary
+#' outcomes coded 0/1, ordered responses coded with numeric values such as 1--5,
+#' and continuous outcomes are supported when their period means are
+#' substantively meaningful. Factor and character outcomes must first be
+#' deliberately recoded as numeric. Time may be an integer-like numeric
+#' variable, a `Date`, or a `POSIXt` value. The current implementation
+#' deliberately uses a time-only linear model; transformations, interactions,
+#' and covariates are not yet supported.
 #'
 #' Every fitted object contains automatic diagnostics. A check receives
 #' `"Review"` status when calendar periods are missing, any observed period has
@@ -18,8 +22,8 @@
 #' spans more calendar periods than requested. These descriptive flags do not
 #' alter estimates or invalidate an analysis.
 #'
-#' @param formula A two-sided formula of the form `outcome ~ time`, using two
-#'   untransformed column names.
+#' @param formula A two-sided formula of the form `outcome ~ time`, using an
+#'   untransformed numeric outcome column and an untransformed time column.
 #' @param data A data frame or tibble with one row per respondent.
 #' @param event_time The event period, in the same scale and class as the time
 #'   variable. Defaults to `0`, which is appropriate when time is coded
