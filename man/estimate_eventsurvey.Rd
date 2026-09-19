@@ -19,7 +19,7 @@ eventsurvey(
 \item{formula}{A two-sided formula of the form \code{outcome ~ time}, using two
 untransformed column names.}
 
-\item{data}{A data frame with one row per respondent.}
+\item{data}{A data frame or tibble with one row per respondent.}
 
 \item{event_time}{The event period, in the same scale and class as the time
 variable. Defaults to \code{0}, which is appropriate when time is coded

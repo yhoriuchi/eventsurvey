@@ -12,8 +12,8 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 ```
 
-`eventsurvey()` expects one respondent per row. Prepare a numeric outcome and
-one equally spaced time variable before fitting.
+`eventsurvey()` accepts a data frame or tibble with one respondent per row.
+Prepare a numeric outcome and one equally spaced time variable before fitting.
 
 ## Formula requirements
 
@@ -47,9 +47,10 @@ column names.
 
 ```{r}
 library(eventsurvey)
+library(dplyr)
 
-dat <- sample_data
-dat$interview_date <- as.Date("2026-06-15") + dat$day
+dat <- sample_data |>
+  mutate(interview_date = as.Date("2026-06-15") + day)
 fit <- eventsurvey(y ~ interview_date, dat,
                    event_time = as.Date("2026-06-15"), window = 6)
 ```

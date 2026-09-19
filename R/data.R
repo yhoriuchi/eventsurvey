@@ -61,6 +61,9 @@
 #' Epifanio, Giani, and Ivandic replication materials:
 #' \doi{10.7910/DVN/AUHSMD}.
 #' @examples
-#' data(published_examples)
-#' subset(published_examples, grepl("privacy", outcome) & day >= -5 & day <= 4)
+#' if (requireNamespace("dplyr", quietly = TRUE)) {
+#'   data(published_examples)
+#'   published_examples |>
+#'     dplyr::filter(grepl("privacy", outcome), dplyr::between(day, -5, 4))
+#' }
 "published_examples"

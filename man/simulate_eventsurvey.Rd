@@ -24,6 +24,10 @@ trend and heterogeneous post-event effects. It is intended for examples,
 teaching, and smoke tests rather than power analysis.
 }
 \examples{
-dat <- simulate_eventsurvey()
-aggregate(y ~ day, dat, mean)
+if (requireNamespace("dplyr", quietly = TRUE)) {
+  dat <- simulate_eventsurvey()
+  dat |>
+    dplyr::group_by(day) |>
+    dplyr::summarise(mean = mean(y), .groups = "drop")
+}
 }

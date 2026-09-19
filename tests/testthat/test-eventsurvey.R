@@ -334,6 +334,28 @@ test_that("summary data reproduce respondent-level estimates", {
   expect_equal(summarized$days, individual$days, tolerance = 1e-12)
 })
 
+test_that("both estimation interfaces accept tibbles", {
+  skip_if_not_installed("dplyr")
+
+  respondents <- dplyr::as_tibble(sample_data)
+  daily <- respondents |>
+    dplyr::group_by(day) |>
+    dplyr::summarise(
+      mean = mean(y),
+      n = dplyr::n(),
+      variance = stats::var(y),
+      .groups = "drop"
+    )
+
+  individual <- eventsurvey(y ~ day, respondents)
+  summarized <- eventsurvey_summary(mean ~ day, daily)
+
+  expect_s3_class(respondents, "tbl_df")
+  expect_s3_class(daily, "tbl_df")
+  expect_equal(summarized$estimate, individual$estimate, tolerance = 1e-12)
+  expect_equal(summarized$days, individual$days, tolerance = 1e-12)
+})
+
 test_that("published application summaries reproduce manuscript tables", {
   data("published_examples", package = "eventsurvey")
   privacy <- subset(published_examples, grepl("privacy", outcome))

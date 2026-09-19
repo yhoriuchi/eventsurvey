@@ -18,18 +18,18 @@ trust_scale <- c(
   "Very Trustworthy" = 4
 )
 bateson_y <- unname(trust_scale[as.character(bateson_source$trustusgov)])
-keep <- is.finite(bateson_source$time_zero) & is.finite(bateson_y)
-split_y <- split(bateson_y[keep], bateson_source$time_zero[keep])
-
 bateson <- data.frame(
-  day = as.integer(names(split_y)),
-  n = vapply(split_y, length, integer(1)),
-  mean = vapply(split_y, mean, numeric(1)),
-  variance = vapply(
-    split_y,
-    function(x) if (length(x) > 1L) stats::var(x) else NA_real_,
-    numeric(1)
-  )
-)
-bateson <- bateson[order(bateson$day), ]
+  day = bateson_source$time_zero,
+  y = bateson_y
+) |>
+  dplyr::filter(is.finite(day), is.finite(y)) |>
+  dplyr::group_by(day) |>
+  dplyr::summarise(
+    n = dplyr::n(),
+    mean = mean(y),
+    variance = if (dplyr::n() > 1L) stats::var(y) else NA_real_,
+    .groups = "drop"
+  ) |>
+  dplyr::arrange(day) |>
+  as.data.frame()
 stopifnot(nrow(bateson) == 51L, min(bateson$day) == -26L)

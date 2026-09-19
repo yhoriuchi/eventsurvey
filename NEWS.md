@@ -1,7 +1,8 @@
 # eventsurvey 0.1.0
 
-* Initial release of `eventsurvey()` for respondent-level data and
-  `eventsurvey_summary()` for period-level counts, means, and variances. Both
+* Initial release of `eventsurvey()` for respondent-level data frames or
+  tibbles and `eventsurvey_summary()` for period-level counts, means, and
+  variances. Both
   interfaces estimate short-run event effects by extrapolating a linear
   pre-event trend and constructing honest bounded-misspecification intervals
   from matched rolling forecasts.

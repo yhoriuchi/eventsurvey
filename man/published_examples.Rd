@@ -39,8 +39,11 @@ source links, access conditions, outcome coding, and the distinction between
 the original studies and these reanalyses.
 }
 \examples{
-data(published_examples)
-subset(published_examples, grepl("privacy", outcome) & day >= -5 & day <= 4)
+if (requireNamespace("dplyr", quietly = TRUE)) {
+  data(published_examples)
+  published_examples |>
+    dplyr::filter(grepl("privacy", outcome), dplyr::between(day, -5, 4))
+}
 }
 \references{
 Bateson, Regina, and Michael Weintraub. 2022. "The 2016 Election and

@@ -18,16 +18,21 @@ long windows use more observations but impose linearity over a longer span.
 
 ```{r}
 library(eventsurvey)
+library(dplyr)
 
 dat <- sample_data
 windows <- 3:7
 fits <- lapply(windows, function(s) {
   eventsurvey(y ~ day, dat, window = s)
 })
-sensitivity <- do.call(rbind, lapply(seq_along(fits), function(i) {
-  cbind(window = windows[i], fits[[i]]$estimate)
-}))
-sensitivity[, c("window", "effect", "bias_bound", "conf_low", "conf_high")]
+sensitivity <- lapply(seq_along(fits), function(i) {
+  fits[[i]]$estimate |>
+    mutate(window = windows[i], .before = 1)
+}) |>
+  bind_rows()
+
+sensitivity |>
+  select(window, effect, bias_bound, conf_low, conf_high)
 ```
 
 Changing the window changes the counterfactual, number of rolling exercises,

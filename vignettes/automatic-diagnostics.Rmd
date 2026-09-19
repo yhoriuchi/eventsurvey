@@ -43,6 +43,7 @@ Begin with the complete daily schedule in `sample_data`.
 
 ```{r setup}
 library(eventsurvey)
+library(dplyr)
 
 complete <- sample_data
 
@@ -65,7 +66,8 @@ entire dates are removed from the complete data.
 
 ```{r sparse-data}
 unobserved_days <- c(-24, -17, -11, -4, 2)
-sparse <- subset(complete, !day %in% unobserved_days)
+sparse <- complete |>
+  filter(!day %in% unobserved_days)
 
 fit_sparse <- eventsurvey(y ~ day, sparse)
 fit_sparse$diagnostics
@@ -99,19 +101,18 @@ variance from the remaining periods and flags both the small count and the
 substitution.
 
 ```{r summary-data}
-daily <- aggregate(y ~ day, complete, function(z) {
-  c(mean = mean(z), n = length(z), variance = stats::var(z))
-})
-
-daily <- data.frame(
-  day = daily$day,
-  mean = daily$y[, "mean"],
-  n = as.integer(daily$y[, "n"]),
-  variance = daily$y[, "variance"]
-)
-
-daily$n[daily$day == -10] <- 1L
-daily$variance[daily$day == -10] <- NA_real_
+daily <- complete |>
+  group_by(day) |>
+  summarise(
+    mean = mean(y),
+    n = n(),
+    variance = var(y),
+    .groups = "drop"
+  ) |>
+  mutate(
+    n = if_else(day == -10, 1L, n),
+    variance = if_else(day == -10, NA_real_, variance)
+  )
 
 fit_small_period <- eventsurvey_summary(mean ~ day, daily)
 fit_small_period$diagnostics
@@ -128,7 +129,8 @@ that minimum can leave only one rolling reference window, whereas a longer
 pre-event series provides more opportunities to evaluate comparable forecasts.
 
 ```{r limited-history}
-short_history <- subset(sample_data, day >= -13)
+short_history <- sample_data |>
+  filter(day >= -13)
 
 fit_short_history <- eventsurvey(y ~ day, short_history)
 fit_short_history$diagnostics

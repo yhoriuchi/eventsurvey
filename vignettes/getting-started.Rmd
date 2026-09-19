@@ -20,8 +20,9 @@ event.
 
 ## 1. Prepare respondent-level data
 
-Each row should be a respondent. The outcome must be numeric, and time must be
-an integer-like numeric variable, a `Date`, or a `POSIXt`. The package includes
+Each row of the data frame or tibble should be a respondent. The outcome must
+be numeric, and time must be an integer-like numeric variable, a `Date`, or a
+`POSIXt`. The package includes
 the ready-to-use `sample_data` dataset so the full workflow can be run without
 private research data or a separate simulation step.
 

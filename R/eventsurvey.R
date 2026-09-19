@@ -20,7 +20,7 @@
 #'
 #' @param formula A two-sided formula of the form `outcome ~ time`, using two
 #'   untransformed column names.
-#' @param data A data frame with one row per respondent.
+#' @param data A data frame or tibble with one row per respondent.
 #' @param event_time The event period, in the same scale and class as the time
 #'   variable. Defaults to `0`, which is appropriate when time is coded
 #'   relative to the event. Supply the event date or period explicitly when
@@ -171,7 +171,7 @@ eventsurvey <- function(formula, data, event_time = 0, window = 6L,
 #'
 #' @param formula A two-sided formula of the form `period_mean ~ time`, using
 #'   two untransformed column names.
-#' @param data A data frame with one row per observed period.
+#' @param data A data frame or tibble with one row per observed period.
 #' @param n The unquoted name of the column containing respondent counts.
 #'   Defaults to a column named `n`.
 #' @param variance The unquoted name of the column containing the within-period
@@ -184,14 +184,17 @@ eventsurvey <- function(formula, data, event_time = 0, window = 6L,
 #'   period-level workflow and an equivalence demonstration.
 #' @export
 #' @examples
-#' daily <- aggregate(y ~ day, sample_data, function(z) {
-#'   c(mean = mean(z), n = length(z), variance = var(z))
-#' })
-#' daily <- data.frame(
-#'   day = daily$day, mean = daily$y[, "mean"],
-#'   n = daily$y[, "n"], variance = daily$y[, "variance"]
-#' )
-#' fit <- eventsurvey_summary(mean ~ day, daily)
+#' if (requireNamespace("dplyr", quietly = TRUE)) {
+#'   daily <- sample_data |>
+#'     dplyr::group_by(day) |>
+#'     dplyr::summarise(
+#'       mean = mean(y),
+#'       n = dplyr::n(),
+#'       variance = stats::var(y),
+#'       .groups = "drop"
+#'     )
+#'   fit <- eventsurvey_summary(mean ~ day, daily)
+#' }
 eventsurvey_summary <- function(formula, data, n = n, variance = variance,
                                 event_time = 0,
                                 window = 6L,
@@ -305,8 +308,12 @@ eventsurvey_summary <- function(formula, data, n = n, variance = variance,
 #' @return A data frame with `day`, `y`, `counterfactual`, and `effect`.
 #' @export
 #' @examples
-#' dat <- simulate_eventsurvey()
-#' aggregate(y ~ day, dat, mean)
+#' if (requireNamespace("dplyr", quietly = TRUE)) {
+#'   dat <- simulate_eventsurvey()
+#'   dat |>
+#'     dplyr::group_by(day) |>
+#'     dplyr::summarise(mean = mean(y), .groups = "drop")
+#' }
 simulate_eventsurvey <- function(seed = 2026L, pre = 30L, post = 8L,
                                  respondents = 40L) {
   validate_scalar(pre, "pre", lower = 4, integer = TRUE)

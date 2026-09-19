@@ -21,7 +21,7 @@ eventsurvey_summary(
 \item{formula}{A two-sided formula of the form \code{period_mean ~ time}, using
 two untransformed column names.}
 
-\item{data}{A data frame with one row per observed period.}
+\item{data}{A data frame or tibble with one row per observed period.}
 
 \item{n}{The unquoted name of the column containing respondent counts.
 Defaults to a column named \code{n}.}
@@ -68,14 +68,17 @@ available. For a time-only linear model, it produces the same estimates as
 the respondent-level function.
 }
 \examples{
-daily <- aggregate(y ~ day, sample_data, function(z) {
-  c(mean = mean(z), n = length(z), variance = var(z))
-})
-daily <- data.frame(
-  day = daily$day, mean = daily$y[, "mean"],
-  n = daily$y[, "n"], variance = daily$y[, "variance"]
-)
-fit <- eventsurvey_summary(mean ~ day, daily)
+if (requireNamespace("dplyr", quietly = TRUE)) {
+  daily <- sample_data |>
+    dplyr::group_by(day) |>
+    dplyr::summarise(
+      mean = mean(y),
+      n = dplyr::n(),
+      variance = stats::var(y),
+      .groups = "drop"
+    )
+  fit <- eventsurvey_summary(mean ~ day, daily)
+}
 }
 \seealso{
 \code{vignette("summary-data", package = "eventsurvey")} for a complete

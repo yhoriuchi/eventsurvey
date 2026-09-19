@@ -12,13 +12,14 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4.2)
 ```
 
-`eventsurvey_summary()` is a primary estimation interface for data stored at
-the survey-period level. Use it when respondent records cannot be shared, are
-unnecessarily large for the task, or have already been reduced to a count,
-mean, and sample variance for each observed survey period.
+`eventsurvey_summary()` is a primary estimation interface for data frames or
+tibbles stored at the survey-period level. Use it when respondent records
+cannot be shared, are unnecessarily large for the task, or have already been
+reduced to a count, mean, and sample variance for each observed survey period.
 
 ```{r}
 library(eventsurvey)
+library(dplyr)
 ```
 
 ## Choose the function that matches the data
@@ -55,15 +56,14 @@ their period-level sufficient statistics.
 ```{r}
 respondents <- sample_data
 
-daily <- aggregate(y ~ day, respondents, function(x) {
-  c(mean = mean(x), n = length(x), variance = var(x))
-})
-daily <- data.frame(
-  day = daily$day,
-  mean = daily$y[, "mean"],
-  n = daily$y[, "n"],
-  variance = daily$y[, "variance"]
-)
+daily <- respondents |>
+  group_by(day) |>
+  summarise(
+    mean = mean(y),
+    n = n(),
+    variance = var(y),
+    .groups = "drop"
+  )
 
 head(daily)
 ```
@@ -130,7 +130,8 @@ for the Epifanio, Giani, and Ivandic application.
 
 ```{r}
 data(published_examples)
-privacy <- subset(published_examples, grepl("privacy", outcome))
+privacy <- published_examples |>
+  filter(grepl("privacy", outcome))
 
 fit_privacy <- eventsurvey_summary(
   mean ~ day,

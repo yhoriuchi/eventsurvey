@@ -35,9 +35,12 @@ eventsurvey_report(
 # Epifanio, Giani, and Ivandic (2023) ------------------------------------
 
 data("published_examples", package = "eventsurvey")
-epifanio <- subset(published_examples, grepl("Epifanio", study))
-privacy <- subset(epifanio, grepl("privacy", outcome))
-procedural <- subset(epifanio, grepl("procedural", outcome))
+epifanio <- published_examples |>
+  dplyr::filter(grepl("Epifanio", study))
+privacy <- epifanio |>
+  dplyr::filter(grepl("privacy", outcome))
+procedural <- epifanio |>
+  dplyr::filter(grepl("procedural", outcome))
 
 fit_privacy <- eventsurvey_summary(
   mean ~ day,

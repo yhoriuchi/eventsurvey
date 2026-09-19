@@ -33,11 +33,13 @@ difference is the fieldwork schedule.
 
 ```{r setup}
 library(eventsurvey)
+library(dplyr)
 
 complete <- sample_data
 
 unobserved_days <- c(-24, -17, -11, -4, 2)
-sparse <- subset(complete, !day %in% unobserved_days)
+sparse <- complete |>
+  filter(!day %in% unobserved_days)
 
 fit_complete <- eventsurvey(
   y ~ day,

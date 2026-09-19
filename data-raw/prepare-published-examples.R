@@ -15,20 +15,27 @@ if (!file.exists(epifanio_file)) {
 }
 
 summarise_periods <- function(day, outcome, study, outcome_name, event_date) {
-  keep <- is.finite(day) & is.finite(outcome)
-  split_y <- split(outcome[keep], day[keep])
-  period <- as.integer(names(split_y))
-  result <- data.frame(
-    study = study,
-    outcome = outcome_name,
-    event_date = as.Date(event_date),
-    date = as.Date(event_date) + period,
-    day = period,
-    n = vapply(split_y, length, integer(1)),
-    mean = vapply(split_y, mean, numeric(1)),
-    variance = vapply(split_y, function(x) if (length(x) > 1L) stats::var(x) else NA_real_, numeric(1))
-  )
-  result[order(result$day), ]
+  data.frame(day = day, value = outcome) |>
+    dplyr::filter(is.finite(day), is.finite(value)) |>
+    dplyr::group_by(day) |>
+    dplyr::summarise(
+      n = dplyr::n(),
+      mean = mean(value),
+      variance = if (dplyr::n() > 1L) stats::var(value) else NA_real_,
+      .groups = "drop"
+    ) |>
+    dplyr::arrange(day) |>
+    dplyr::transmute(
+      study = study,
+      outcome = outcome_name,
+      event_date = as.Date(event_date),
+      date = as.Date(event_date) + day,
+      day,
+      n,
+      mean,
+      variance
+    ) |>
+    as.data.frame()
 }
 
 epifanio <- read.csv(epifanio_file, check.names = FALSE)
@@ -50,6 +57,7 @@ procedural_summary <- summarise_periods(
   "Support for restrictions on procedural rights", "2005-07-07"
 )
 
-published_examples <- rbind(privacy_summary, procedural_summary)
+published_examples <- dplyr::bind_rows(privacy_summary, procedural_summary) |>
+  as.data.frame()
 rownames(published_examples) <- NULL
 save(published_examples, file = "data/published_examples.rda", compress = "xz")
