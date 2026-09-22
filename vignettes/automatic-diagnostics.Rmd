@@ -39,6 +39,16 @@ design are appropriate for the application.
 
 ## Inspect the diagnostics
 
+Covariate-adjusted fits also enforce full-rank regressions with positive
+residual degrees of freedom in every window and at least two complete
+responses in every pre-event and forecast period. These requirements produce
+errors when violated; the five descriptive checks do not substitute for them.
+`fit$model_diagnostics` reports the parameter count, final residual degrees
+of freedom, and fitting-window RMSEs. In-sample RMSE generally decreases when
+predictors are added; judge usefulness with the rolling forecast errors, too.
+The daily variance check describes raw outcome summaries; adjusted inference
+uses respondent influence functions rather than these marginal variances.
+
 Begin with the complete daily schedule in `sample_data`.
 
 ```{r setup}

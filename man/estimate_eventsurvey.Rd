@@ -16,8 +16,9 @@ eventsurvey(
 )
 }
 \arguments{
-\item{formula}{A two-sided formula of the form \code{outcome ~ time}, using an
-untransformed numeric outcome column and an untransformed time column.}
+\item{formula}{A two-sided formula \code{outcome ~ time} or
+\code{outcome ~ time + covariate1 + covariate2}, using distinct, untransformed
+column names. The outcome is numeric and the first right-hand term is time.}
 
 \item{data}{A data frame or tibble with one row per respondent.}
 
@@ -51,7 +52,11 @@ models use the actual time values rather than compressing gaps.}
 An object of class \code{eventsurvey} containing the estimate, honest and
 conventional intervals, day-specific results, reference forecast errors,
 rolling-window diagnostics, automatic design and data checks, daily
-summaries, and analysis settings.
+summaries, and analysis settings. Covariate-adjusted objects also contain
+\code{inference} (covariance components used for intervals),
+\code{counterfactual_path} (period-average predictions from the final fit), and
+\code{model_diagnostics} (parameter count, residual degrees of freedom, and
+fitting-window RMSEs). Respondent data are not stored in the fitted object.
 }
 \description{
 \code{eventsurvey()} extrapolates the pre-event outcome trend into a short
@@ -66,9 +71,36 @@ outcomes coded 0/1, ordered responses coded with numeric values such as 1--5,
 and continuous outcomes are supported when their period means are
 substantively meaningful. Factor and character outcomes must first be
 deliberately recoded as numeric. Time may be an integer-like numeric
-variable, a \code{Date}, or a \code{POSIXt} value. The current implementation
-deliberately uses a time-only linear model; transformations, interactions,
-and covariates are not yet supported.
+variable, a \code{Date}, or a \code{POSIXt} value. Add covariates after time, for example
+\code{support ~ interview_date + age + education}. Time must be the first term.
+Only additive, untransformed columns are supported; interactions and
+nonlinear time terms are not supported. Numeric covariates enter linearly;
+factors, character columns, and logical columns enter as categorical
+indicators (ordered factors are treated as unordered).
+
+With covariates, respondent-level OLS is fitted separately in every rolling
+and final pre-event window. Predictions are averaged over the covariates of
+respondents in each forecast period. Use only pre-event characteristics
+that cannot be affected by the event. The estimand averages the effects for
+each forecast period's respondent population, weighting periods equally.
+Adjustment does not automatically identify an effect for a fixed population
+when survey composition changes.
+
+Covariate-adjusted uncertainty uses stacked respondent influence functions,
+centered within periods and corrected by \code{n / (n - 1)}. This accounts for
+estimated covariate means, coefficient uncertainty, and shared observations
+across overlapping fits. It conditions on period counts and assumes
+independent respondents, allowing heterogeneous variances. Intervals are
+asymptotic and additionally require the bounded forecast-misspecification
+assumption. Every used period must contain at least two complete responses,
+and every fitting window must have full column rank and positive residual
+degrees of freedom. Missing outcome, time, or covariates cause complete-case
+omission with a warning. Covariates do not guarantee better forecasts or
+narrower intervals; inspect rolling errors and choose the specification
+without using post-event outcomes.
+Daily intervals require a day-specific bias bound and are pointwise, not
+a simultaneous confidence band; the average interval requires the bound
+on average forecast bias.
 
 Every fitted object contains automatic diagnostics. A check receives
 \code{"Review"} status when calendar periods are missing, any observed period has
@@ -81,6 +113,12 @@ alter estimates or invalidate an analysis.
 fit <- eventsurvey(y ~ day, sample_data)
 fit
 summary(fit)
+set.seed(42)
+dat <- sample_data
+dat$age <- rnorm(nrow(dat), mean = 45, sd = 12)
+dat$y <- dat$y + 0.2 * (dat$age - 45)
+adjusted <- eventsurvey(y ~ day + age, dat)
+adjusted
 }
 \seealso{
 \code{vignette("automatic-diagnostics", package = "eventsurvey")} for

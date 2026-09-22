@@ -1,0 +1,151 @@
+---
+title: "Covariate Adjustment"
+description: "Improve pre-event prediction with baseline covariates and understand adjusted forecasts and uncertainty."
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Covariate Adjustment}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4)
+```
+
+## Add baseline predictors
+
+Use `outcome ~ time + covariates`, with time first. The package fits
+respondent-level OLS separately in every rolling and final pre-event window.
+Numeric covariates enter linearly. Factors, character, and logical columns are
+categorical indicators; ordered factors are treated as unordered. Formula
+transformations, interactions, and nonlinear time trends remain unsupported.
+
+This simulation deliberately adds a strong baseline predictor and changing
+survey composition, so the role of adjustment can be checked against a known
+effect. These are synthetic observations, not an empirical application.
+
+```{r setup}
+library(eventsurvey)
+set.seed(926)
+survey <- data.frame(day = rep(-24:6, each = 100))
+survey$baseline <- rnorm(nrow(survey), mean = 0.7 * sin(survey$day / 3))
+survey$group <- factor(rep(c("A", "B"), length.out = nrow(survey)))
+survey$y <- 10 + 0.1 * survey$day + 3 * survey$baseline +
+  0.8 * (survey$group == "B") + 2 * (survey$day >= 0) +
+  rnorm(nrow(survey))
+
+time_only <- eventsurvey(y ~ day, survey)
+adjusted <- eventsurvey(y ~ day + baseline + group, survey)
+adjusted
+```
+
+The true event effect is two outcome units in every post-event period. The
+baseline variables describe characteristics that the event cannot change.
+In real data, measurement after the event is acceptable only if the variable
+still records an unaffected baseline characteristic; a contemporaneous
+attitude or behavior changed by the event is not an appropriate control.
+
+## Compare predictive performance
+
+Compare models on the same observations and with the same windows. If any
+candidate covariate is missing, construct a common complete-case sample before
+fitting both models. Automatic omission otherwise changes the comparison.
+
+```{r comparison}
+comparison <- data.frame(
+  model = c("Time only", "Baseline-adjusted"),
+  effect = c(coef(time_only), coef(adjusted)),
+  standard_error = c(time_only$estimate$std_error, adjusted$estimate$std_error),
+  reference_rmse = c(
+    sqrt(mean(time_only$reference$error^2)),
+    sqrt(mean(adjusted$reference$error^2))
+  ),
+  bias_bound = c(time_only$estimate$bias_bound, adjusted$estimate$bias_bound)
+)
+knitr::kable(comparison, digits = 3, row.names = FALSE)
+```
+
+The rolling RMSE describes the same pre-event forecasting exercises for both
+models. Their errors overlap and are not independent validation observations.
+Lower in-sample RMSE alone is insufficient: adding weak predictors can make
+forecasts less stable, and adjusted intervals need not be narrower. Choose
+covariates from substantive knowledge before examining post-event results.
+Repeatedly tuning a specification on the rolling errors introduces selection
+uncertainty that the reported intervals do not include.
+
+```{r diagnostics}
+adjusted$model_diagnostics
+plot(adjusted, type = "diagnostics")
+```
+
+## What is predicted and averaged?
+
+For each forecast date, the fitted pre-event model predicts the outcome for
+each respondent actually observed on that date, using that respondent's
+covariates. The counterfactual mean averages those predictions. The period
+effect subtracts that mean from the observed outcome mean; the window effect
+averages the period effects with equal weight.
+
+```{r counterfactual}
+plot(adjusted, type = "counterfactual")
+```
+
+The adjusted path can bend because covariate composition changes, even though
+time enters the regression linearly. A causal interpretation requires a
+credible no-event conditional outcome model and a defensible relation between
+interview timing, baseline covariates, and potential outcomes. The target is
+the average effect for each forecast date's respondent population. A common
+population ATE needs additional representativeness or standardization
+assumptions. Covariates do not remove an unrelated contemporaneous shock or
+automatically repair event-induced nonresponse.
+
+## Uncertainty and practical requirements
+
+The adjusted covariance calculation combines respondent influence functions
+for every effect and rolling reference error. It includes fitted coefficients,
+each forecast period's estimated covariate mean, and all shared-observation
+covariances needed for the intervals. Scores are centered within interview
+period, with covariance correction `n / (n - 1)`, conditional on period counts.
+Respondents must be independent within and across periods; outcome variances
+may differ. These are asymptotic intervals, not finite-sample guarantees.
+
+The honest interval additionally assumes that the population error of the
+adjusted post-event forecast is bounded by the largest absolute corresponding
+population reference error. Its empirical estimate is the displayed bias
+bound. The procedure does not verify this assumption from data.
+
+Every fitting window must identify all coefficients and retain positive
+residual degrees of freedom. Constant covariates, collinear variables, or
+factor levels missing from a fitting window cause a clear error. Consider
+fewer substantively justified covariates or a longer defensible window; do
+not silently discard problematic reference windows. Also inspect whether
+forecast covariate distributions extend beyond those in the fitting windows.
+
+Each pre-event and forecast period must have at least two complete responses.
+The adjusted method does not borrow a variance for singleton periods. Small
+samples and many predictors can still make uncertainty unreliable despite
+satisfying the formal minimums. Missing outcome, time, or included covariates
+cause omission with a warning; inspect the resulting period counts.
+
+```{r effects}
+plot(adjusted, type = "effects", inner_level = 0.90)
+```
+
+The report and extraction methods work as usual:
+
+```{r}
+coef(adjusted)
+confint(adjusted)
+```
+
+```{r, eval = FALSE}
+eventsurvey_report(adjusted, "adjusted-report.html")
+```
+
+`eventsurvey_summary()` remains time-only. Counts, outcome means, and outcome
+variances, even with mean covariates, do not recover the joint respondent
+information used by the adjusted estimator and its covariance calculation.
+
+See [Methodology](methodology.html), [Data Preparation](data-preparation.html),
+and [Automatic Diagnostics](automatic-diagnostics.html) for the shared design
+and data requirements.

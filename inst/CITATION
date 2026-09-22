@@ -8,6 +8,6 @@ bibentry(
     person("Yuki", "Shiraito")
   ),
   year = "2026",
-  note = "R package version 0.1.0",
+  note = paste("R package version", meta$Version),
   url = "https://yhoriuchi.github.io/eventsurvey/"
 )

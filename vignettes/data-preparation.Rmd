@@ -17,10 +17,11 @@ Prepare a numeric outcome and one equally spaced time variable before fitting.
 
 ## Formula requirements
 
-Use exactly one outcome column and one time column:
+Use one outcome column, put time first, and optionally add baseline covariates:
 
 ```{r, eval = FALSE}
 fit <- eventsurvey(outcome ~ time, data = survey_data)
+adjusted <- eventsurvey(outcome ~ time + age + education, data = survey_data)
 ```
 
 Both sides of the formula must be untransformed column names. The following
@@ -29,19 +30,21 @@ specifications are intentionally rejected:
 ```{r, eval = FALSE}
 eventsurvey(log(outcome) ~ time, survey_data)       # transformed in formula
 eventsurvey(outcome ~ I(time^2), survey_data)       # nonlinear time term
-eventsurvey(outcome ~ time + covariate, survey_data) # additional variable
 eventsurvey(outcome ~ time * group, survey_data)    # interaction
 ```
 
-This restriction keeps the fitted model aligned with the package's currently
-validated time-only linear methodology. To analyze a substantively justified
+This restriction keeps the fitted model additive and linear in time.
+Numeric covariates enter linearly; factors, character, and logical columns
+are categorical. Ordered factors are treated as unordered. To analyze a substantively justified
 transformation of the outcome, create an explicit numeric column first and use
 its name in the formula. The package does not currently support nonlinear time
-trends, covariate adjustment, or interactions.
+trends or interactions. Covariates must represent characteristics unaffected
+by the event. See [Covariate Adjustment](covariate-adjustment.html).
 
-The same rule applies to period-level input: use
+Period-level input remains time-only: use
 `eventsurvey_summary(period_mean ~ time, data = period_data)` with simple
-column names.
+column names. Counts, means, and outcome variances are insufficient for
+respondent-level covariate adjustment.
 
 ## Dates
 
@@ -82,8 +85,11 @@ original coded units: for example, changes in proportions on a 0--1 outcome
 outcome. A factor or character response must first be recoded deliberately;
 for an ordinal item, interpreting means assumes that the chosen numerical
 spacing is meaningful. Recode special missing values to `NA`. Rows with
-missing outcome or time are omitted with a warning; report that decision and
+missing outcome, time, or included covariates are omitted with a warning; report that decision and
 the resulting daily counts.
+Adjusted models require at least two complete responses in each pre-event and
+forecast period and identifiable coefficients in every fitting window.
+Use the same complete-case sample when comparing adjusted and time-only fits.
 
 ## Sparse and irregular fieldwork
 

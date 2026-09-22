@@ -21,6 +21,16 @@ The estimated window-average event effect is
 `r format_number(estimate$conf_high)`]**. Effects are expressed in the original
 units of **`r fit$settings$outcome`**.
 
+```{r adjustment-description, results='asis', echo=FALSE}
+if (length(fit$settings$covariates)) {
+  cat("This analysis adjusts for **",
+      paste(fit$settings$covariates, collapse = ", "),
+      "**. Each forecast uses the covariates of respondents observed in that period. ",
+      "Uncertainty uses period-stratified respondent influence functions, including ",
+      "estimated covariate means and overlapping fits.\n\n", sep = "")
+}
+```
+
 ```{r main-result}
 main_result <- data.frame(
   Quantity = c(
@@ -71,6 +81,9 @@ knitr::kable(diagnostic_table, align = c("l", "l", "l", "l"))
 
 The line extrapolates the fitted pre-event trend. Open points show the
 estimated no-event outcomes, and vertical gaps show period-specific effects.
+When covariates are included, the line averages the adjusted predictions in
+each period; it can bend as respondent composition changes despite the linear
+time term.
 
 ```{r counterfactual}
 plot(fit, type = "counterfactual")
@@ -116,7 +129,7 @@ coverage <- data.frame(
     "Data level",
     "Input rows",
     "Rows used",
-    "Rows omitted for missing outcome or time",
+    "Rows omitted for missing outcome or time (or included covariates)",
     "Total responses represented",
     "Observed periods",
     "Minimum responses per period",
@@ -156,7 +169,9 @@ settings <- data.frame(
     "Period schedule",
     "Final fitting span",
     "Final forecast span",
-    "Confidence level"
+    "Confidence level",
+    "Covariates",
+    "Uncertainty calculation"
   ),
   Value = c(
     paste(deparse(fit$call$formula, width.cutoff = 500L), collapse = " "),
@@ -173,7 +188,9 @@ settings <- data.frame(
     fit$settings$schedule,
     paste(fit$settings$fit_span, "periods on the time scale"),
     paste(fit$settings$forecast_span, "periods on the time scale"),
-    paste0(format_number(confidence_level, 0), "%")
+    paste0(format_number(confidence_level, 0), "%"),
+    if (length(fit$settings$covariates)) paste(fit$settings$covariates, collapse = ", ") else "None",
+    if (length(fit$settings$covariates)) fit$settings$uncertainty else "Analytic period-mean covariance"
   ),
   check.names = FALSE
 )
@@ -189,5 +206,10 @@ The analysis does not by itself rule out other contemporaneous changes or
 event-related changes in who responds to the survey. The honest interval
 accounts for sampling uncertainty and the package's bounded forecast
 misspecification procedure; it does not make these design assumptions true.
+Covariates must be unaffected by the event. Adjusted effects concern each
+period's respondent population and do not automatically identify an effect
+for a fixed population if composition changes. The uncertainty calculation
+assumes independent respondents; it does not cover clustered or repeated
+observations. Complete-case omission can also change the target population.
 
 `r if (multiple_analyses) "This analysis is estimated separately from the other analyses in this report; the report does not pool them and does not apply a multiple-comparison adjustment." else "This report concerns one fitted event-survey analysis."`

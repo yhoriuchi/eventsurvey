@@ -69,6 +69,34 @@ sizes as weights. Each effect and reference error can therefore be written as
 a linear combination of independent period means, making all overlapping
 window covariances explicit.
 
+With additive covariates, each window instead fits respondent-level OLS of
+the outcome on an intercept, time, and the specified baseline covariates.
+Forecasts average predictions over respondents in the forecast period:
+the estimand is the average of period-specific effects for those respondent
+populations. Connecting it to a common population ATE requires additional
+representativeness or standardization assumptions.
+
+Adjusted inference stacks the influence contributions of each respondent to
+the effects and rolling forecast errors. The forecast-period contribution
+uses the centered residual `outcome - predicted outcome`; this includes the
+estimated covariate mean and its covariance with the observed outcome mean.
+Fitting-window contributions include coefficient-estimation uncertainty.
+All contributions are centered within period, conditional on period sample
+sizes, with finite-sample covariance correction `n / (n - 1)`. Cross-products
+retain dependencies from shared observations across fits and forecasts.
+This assumes independent respondents within and across periods, allows
+heterogeneous variances, and yields asymptotic intervals. It is not a
+cluster-robust procedure for repeated respondents or common period shocks.
+
+The bound concerns **population specification errors**, estimated using
+rolling errors; a realized maximum is not proof that the assumption holds.
+The extension retains the same union--intersection endpoints and applies the
+bound to the adjusted forecast task. See [Covariate Adjustment](covariate-adjustment.html)
+for sample-size requirements, diagnostics, and an example.
+The window interval requires a bound on average forecast bias. Each daily
+interval requires the corresponding day-specific bound and is pointwise;
+the displayed daily intervals are not a simultaneous confidence band.
+
 ## What the interval does not solve
 
 The procedure does not prove event exogeneity, repair event-caused changes in

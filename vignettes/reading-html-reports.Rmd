@@ -72,6 +72,12 @@ trigger and recommended response for each check.
 
 ## Observed and counterfactual outcomes
 
+For covariate-adjusted analyses, the report lists the covariates and the
+period-stratified influence-function uncertainty calculation. Forecasts
+average adjusted predictions for the respondents in each period, so their
+path can bend as the covariate distribution changes. The omission count
+includes rows missing any included covariate.
+
 The counterfactual figure displays the fitted pre-event trend and extends it
 into the forecast periods. By default these begin in the first observed period
 after the event; the settings table records any explicit decision to include

@@ -1,3 +1,17 @@
+# eventsurvey 0.2.0
+
+* Adds additive respondent-level covariates using `outcome ~ time + x1 + x2`.
+  Numeric, factor, character, and logical covariates are supported. Every
+  fitting window uses OLS and predictions use each forecast period's covariates.
+* Implements period-stratified respondent influence functions for adjusted
+  uncertainty, including estimated covariate means and cross-window overlap.
+  Adjusted models require at least two complete responses per used period and
+  full-rank fits with residual degrees of freedom. The time-only estimator
+  and period-summary interface retain their existing calculations.
+* Updates adjusted counterfactual plots, inner effect intervals, HTML reports,
+  and documentation, including a covariate-adjustment article. Adds numerical,
+  regression, and simulation validation of the extension.
+
 # eventsurvey 0.1.0
 
 * Initial release of `eventsurvey()` for respondent-level data frames or

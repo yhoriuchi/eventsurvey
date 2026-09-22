@@ -66,6 +66,9 @@ An object of class \code{eventsurvey}; see \code{\link[=eventsurvey]{eventsurvey
 redistributed but each period's count, mean, and sample variance are
 available. For a time-only linear model, it produces the same estimates as
 the respondent-level function.
+Covariate adjustment is available only in \code{\link[=eventsurvey]{eventsurvey()}}: period counts,
+outcome means, and outcome variances do not contain the respondent-level
+covariances needed to fit and quantify uncertainty in an adjusted model.
 }
 \examples{
 if (requireNamespace("dplyr", quietly = TRUE)) {

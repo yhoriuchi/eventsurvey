@@ -86,3 +86,21 @@ test_that("eventsurvey_report creates a self-contained HTML report", {
   expect_match(combined_html, "does not pool events or outcomes", fixed = TRUE)
   expect_match(combined_html, "multiple\\s+comparisons")
 })
+
+test_that("adjusted reports describe the model and use adjusted figures", {
+  skip_if_not_installed("rmarkdown")
+  skip_if_not(rmarkdown::pandoc_available())
+  dat <- sample_data
+  set.seed(991)
+  dat$baseline <- rnorm(nrow(dat))
+  dat$y <- dat$y + dat$baseline
+  fit <- eventsurvey(y ~ day + baseline, dat)
+  output <- tempfile(fileext = ".html")
+  on.exit(unlink(output), add = TRUE)
+  eventsurvey_report(fit, output, open = FALSE)
+  html <- paste(readLines(output, warn = FALSE), collapse = "\n")
+  expect_match(html, "baseline", fixed = TRUE)
+  expect_match(html, "estimated covariate means", fixed = TRUE)
+  expect_match(html, "Period-stratified respondent influence functions", fixed = TRUE)
+  expect_true(grepl("unaffected by the\\s+event", html))
+})

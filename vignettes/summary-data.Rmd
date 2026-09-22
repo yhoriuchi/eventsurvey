@@ -29,7 +29,7 @@ library(dplyr)
 | One row per respondent | `eventsurvey()` | Outcome and interview period |
 | One row per observed period | `eventsurvey_summary()` | Period mean, count, sample variance, and period |
 
-Both functions use the same time-only linear extrapolation, rolling forecast
+With a time-only formula, both functions use the same linear extrapolation, rolling forecast
 diagnostics, bias bound, and interval construction. They return the same
 `eventsurvey` object class, so the same `summary()` and `plot()` methods apply.
 
@@ -98,6 +98,12 @@ information used by the estimator:
 all.equal(fit_respondents$estimate, fit_daily$estimate)
 all.equal(fit_respondents$days, fit_daily$days)
 ```
+
+This equivalence applies only to the time-only model. Adding period averages
+of respondent covariates does not recover their within-period relationship
+with the outcome or the uncertainty in overlapping adjusted fits.
+For covariate adjustment, use respondent-level `eventsurvey()`; see
+[Covariate Adjustment](covariate-adjustment.html).
 
 ## Inspect and plot the result
 

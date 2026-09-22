@@ -11,9 +11,36 @@
 #' and continuous outcomes are supported when their period means are
 #' substantively meaningful. Factor and character outcomes must first be
 #' deliberately recoded as numeric. Time may be an integer-like numeric
-#' variable, a `Date`, or a `POSIXt` value. The current implementation
-#' deliberately uses a time-only linear model; transformations, interactions,
-#' and covariates are not yet supported.
+#' variable, a `Date`, or a `POSIXt` value. Add covariates after time, for example
+#' `support ~ interview_date + age + education`. Time must be the first term.
+#' Only additive, untransformed columns are supported; interactions and
+#' nonlinear time terms are not supported. Numeric covariates enter linearly;
+#' factors, character columns, and logical columns enter as categorical
+#' indicators (ordered factors are treated as unordered).
+#'
+#' With covariates, respondent-level OLS is fitted separately in every rolling
+#' and final pre-event window. Predictions are averaged over the covariates of
+#' respondents in each forecast period. Use only pre-event characteristics
+#' that cannot be affected by the event. The estimand averages the effects for
+#' each forecast period's respondent population, weighting periods equally.
+#' Adjustment does not automatically identify an effect for a fixed population
+#' when survey composition changes.
+#'
+#' Covariate-adjusted uncertainty uses stacked respondent influence functions,
+#' centered within periods and corrected by `n / (n - 1)`. This accounts for
+#' estimated covariate means, coefficient uncertainty, and shared observations
+#' across overlapping fits. It conditions on period counts and assumes
+#' independent respondents, allowing heterogeneous variances. Intervals are
+#' asymptotic and additionally require the bounded forecast-misspecification
+#' assumption. Every used period must contain at least two complete responses,
+#' and every fitting window must have full column rank and positive residual
+#' degrees of freedom. Missing outcome, time, or covariates cause complete-case
+#' omission with a warning. Covariates do not guarantee better forecasts or
+#' narrower intervals; inspect rolling errors and choose the specification
+#' without using post-event outcomes.
+#' Daily intervals require a day-specific bias bound and are pointwise, not
+#' a simultaneous confidence band; the average interval requires the bound
+#' on average forecast bias.
 #'
 #' Every fitted object contains automatic diagnostics. A check receives
 #' `"Review"` status when calendar periods are missing, any observed period has
@@ -22,8 +49,9 @@
 #' spans more calendar periods than requested. These descriptive flags do not
 #' alter estimates or invalidate an analysis.
 #'
-#' @param formula A two-sided formula of the form `outcome ~ time`, using an
-#'   untransformed numeric outcome column and an untransformed time column.
+#' @param formula A two-sided formula `outcome ~ time` or
+#'   `outcome ~ time + covariate1 + covariate2`, using distinct, untransformed
+#'   column names. The outcome is numeric and the first right-hand term is time.
 #' @param data A data frame or tibble with one row per respondent.
 #' @param event_time The event period, in the same scale and class as the time
 #'   variable. Defaults to `0`, which is appropriate when time is coded
@@ -48,7 +76,11 @@
 #' @return An object of class `eventsurvey` containing the estimate, honest and
 #'   conventional intervals, day-specific results, reference forecast errors,
 #'   rolling-window diagnostics, automatic design and data checks, daily
-#'   summaries, and analysis settings.
+#'   summaries, and analysis settings. Covariate-adjusted objects also contain
+#'   `inference` (covariance components used for intervals),
+#'   `counterfactual_path` (period-average predictions from the final fit), and
+#'   `model_diagnostics` (parameter count, residual degrees of freedom, and
+#'   fitting-window RMSEs). Respondent data are not stored in the fitted object.
 #' @seealso `vignette("automatic-diagnostics", package = "eventsurvey")` for
 #'   examples of every automatic check and guidance on `Review` statuses.
 #' @rdname estimate_eventsurvey
@@ -57,6 +89,12 @@
 #' fit <- eventsurvey(y ~ day, sample_data)
 #' fit
 #' summary(fit)
+#' set.seed(42)
+#' dat <- sample_data
+#' dat$age <- rnorm(nrow(dat), mean = 45, sd = 12)
+#' dat$y <- dat$y + 0.2 * (dat$age - 45)
+#' adjusted <- eventsurvey(y ~ day + age, dat)
+#' adjusted
 eventsurvey <- function(formula, data, event_time = 0, window = 6L,
                         event_day = c("exclude", "include"),
                         report_event_day = TRUE, alpha = 0.05,
@@ -70,14 +108,20 @@ eventsurvey <- function(formula, data, event_time = 0, window = 6L,
     is.na(report_event_day)) {
     stop("`report_event_day` must be TRUE or FALSE.", call. = FALSE)
   }
-  validate_simple_formula(formula, data)
+  variables <- validate_simple_formula(formula, data, covariates = TRUE)
+  adjusted <- length(variables) > 2L
   n_input_rows <- nrow(data)
   mf <- stats::model.frame(formula, data = data, na.action = stats::na.omit)
   y <- stats::model.response(mf)
   time <- mf[[2L]]
   if (!is.numeric(y)) stop("The outcome must be numeric.", call. = FALSE)
   if (nrow(mf) < nrow(data)) {
-    warning(nrow(data) - nrow(mf), " row(s) with missing outcome or time were omitted.",
+    warning(nrow(data) - nrow(mf),
+      if (adjusted) {
+        " row(s) with missing outcome, time, or covariates were omitted."
+      } else {
+        " row(s) with missing outcome or time were omitted."
+      },
       call. = FALSE
     )
   }
@@ -131,8 +175,12 @@ eventsurvey <- function(formula, data, event_time = 0, window = 6L,
     )
   }
   built <- build_design(ps, window, target, schedule, event_day)
-  result <- estimate_design(built, ps, alpha)
-  day_results <- estimate_days(built, ps, alpha)
+  result <- if (adjusted) {
+    estimate_covariates(mf, day, built, ps, alpha)
+  } else {
+    estimate_design(built, ps, alpha)
+  }
+  day_results <- if (adjusted) result$days else estimate_days(built, ps, alpha)
   if (event_day == "include" && !report_event_day) {
     day_results <- day_results[day_results$relative_period != 0, , drop = FALSE]
   }
@@ -154,14 +202,23 @@ eventsurvey <- function(formula, data, event_time = 0, window = 6L,
     n_used_rows = nrow(mf),
     n_omitted_rows = n_input_rows - nrow(mf),
     total_responses = sum(ps$n),
-    outcome = names(mf)[1L], time = names(mf)[2L]
+    outcome = names(mf)[1L], time = names(mf)[2L],
+    covariates = variables[-(1:2)],
+    uncertainty = if (adjusted) {
+      "Period-stratified respondent influence functions"
+    } else {
+      "Analytic period-mean covariance"
+    }
   )
   diagnostics <- analysis_diagnostics(ps, settings, built)
   structure(list(
     estimate = result$estimate, days = day_results,
     reference = result$reference, windows = built$windows, daily = ps,
     fitted = result$fitted, settings = settings, diagnostics = diagnostics,
-    call = cl, formula = formula
+    call = cl, formula = formula,
+    inference = result$inference,
+    counterfactual_path = result$counterfactual_path,
+    model_diagnostics = result$model_diagnostics
   ), class = "eventsurvey")
 }
 
@@ -172,6 +229,9 @@ eventsurvey <- function(formula, data, event_time = 0, window = 6L,
 #' redistributed but each period's count, mean, and sample variance are
 #' available. For a time-only linear model, it produces the same estimates as
 #' the respondent-level function.
+#' Covariate adjustment is available only in [eventsurvey()]: period counts,
+#' outcome means, and outcome variances do not contain the respondent-level
+#' covariances needed to fit and quantify uncertainty in an adjusted model.
 #'
 #' @param formula A two-sided formula of the form `period_mean ~ time`, using
 #'   two untransformed column names.
@@ -358,6 +418,9 @@ print.eventsurvey <- function(x, ...) {
   est <- x$estimate
   cat("Event-during-survey estimate\n")
   cat("Formula: ", paste(deparse(x$formula), collapse = " "), "\n", sep = "")
+  if (length(x$settings$covariates)) {
+    cat("Covariates:", paste(x$settings$covariates, collapse = ", "), "\n")
+  }
   cat(
     "Window:", x$settings$window, "periods | reference forecasts:",
     est$n_reference, "\n"
@@ -507,6 +570,10 @@ print.summary.eventsurvey <- function(x, ...) {
     x$settings$forecast_span, "period(s) on the time scale\n"
   )
   cat("  Confidence level:", 100 * (1 - x$settings$alpha), "%\n\n")
+  if (length(x$settings$covariates)) {
+    cat("  Covariates:", paste(x$settings$covariates, collapse = ", "), "\n")
+    cat("  Uncertainty:", x$settings$uncertainty, "\n\n")
+  }
   cat("Automatic diagnostics\n")
   for (i in seq_len(nrow(x$diagnostics))) {
     cat(

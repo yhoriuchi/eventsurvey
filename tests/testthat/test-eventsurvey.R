@@ -54,7 +54,7 @@ test_that("core estimators require a simple outcome-by-time formula", {
   )
   expect_error(
     eventsurvey(y ~ day + counterfactual, dat),
-    "untransformed column names"
+    "rank deficient"
   )
   expect_error(
     eventsurvey(not_a_variable ~ day, dat),

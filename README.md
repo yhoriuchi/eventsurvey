@@ -48,6 +48,22 @@ eventsurvey_report(fit)
 The fitted object checks the data and design automatically, and the HTML report
 brings the main estimates, diagnostics, and figures together in one file.
 
+## Add pre-event covariates
+
+With respondent-level data, put time first and add baseline characteristics:
+
+```r
+adjusted <- eventsurvey(outcome ~ day + age + education, survey_data)
+```
+
+Numeric covariates enter linearly; factors and character columns enter as
+categorical indicators. Each pre-event window fits its own OLS model. Forecasts
+average predictions over each forecast period's respondents, and uncertainty
+includes estimated covariate means and overlapping fits. Use characteristics
+unaffected by the event, and assess forecasting performance before the event.
+See [Covariate Adjustment](articles/covariate-adjustment.html) for a runnable
+example, assumptions, and limitations. Summary-only data remain time-only.
+
 ## Learn more
 
 - [Getting Started](articles/getting-started.html) — Fit a model and
@@ -72,7 +88,7 @@ events and to pooling comparable events across fieldwork periods—for example,
 designs studying multiple high-level visits. These extensions require new
 work on the estimand, dependence across events, and uncertainty.
 
-Other potential features include covariate adjustment, alternative trend
+Other potential features include alternative trend
 specifications, survey weights, clustered uncertainty, and richer workflows
 for multiple outcomes and subgroups. Each requires additional methodological
 development and validation before becoming a public package option.

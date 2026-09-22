@@ -7,18 +7,40 @@ validate_scalar <- function(x, name, lower = -Inf, upper = Inf,
   invisible(x)
 }
 
-validate_simple_formula <- function(formula, data) {
+validate_simple_formula <- function(formula, data, covariates = FALSE) {
   if (!is.data.frame(data)) {
     stop("`data` must be a data frame.", call. = FALSE)
   }
+  additive_names <- function(x) {
+    if (is.symbol(x) && as.character(x) != ".") {
+      return(as.character(x))
+    }
+    if (is.call(x) && identical(x[[1L]], as.name("+")) && length(x) == 3L) {
+      left <- additive_names(x[[2L]])
+      right <- additive_names(x[[3L]])
+      if (!is.null(left) && !is.null(right)) {
+        return(c(left, right))
+      }
+    }
+    NULL
+  }
+  rhs <- if (inherits(formula, "formula") && length(formula) == 3L) {
+    additive_names(formula[[3L]])
+  }
   if (!inherits(formula, "formula") || length(formula) != 3L ||
-    !is.symbol(formula[[2L]]) || !is.symbol(formula[[3L]])) {
+    !is.symbol(formula[[2L]]) || is.null(rhs)) {
     stop(
-      "`formula` must use untransformed column names in the form outcome ~ time.",
+      "`formula` must use untransformed column names: outcome ~ time, optionally + covariate(s). Put time first; transformations and interactions are not supported.",
       call. = FALSE
     )
   }
-  variables <- c(as.character(formula[[2L]]), as.character(formula[[3L]]))
+  if (!covariates && length(rhs) > 1L) {
+    stop("`eventsurvey_summary()` supports only outcome ~ time. Covariate adjustment requires respondent-level data and `eventsurvey()`.", call. = FALSE)
+  }
+  variables <- c(as.character(formula[[2L]]), rhs)
+  if (anyDuplicated(variables)) {
+    stop("Outcome, time, and covariates must be distinct column names.", call. = FALSE)
+  }
   missing_variables <- setdiff(variables, names(data))
   if (length(missing_variables)) {
     stop(

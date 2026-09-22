@@ -48,11 +48,13 @@ the first six observed post-event periods. The rolling pre-event exercises
 reproduce this six-period fit, one-period gap, and six-period forecast to
 construct matched forecast errors.
 
-The formula must use exactly two **untransformed column names** in the form
-`outcome ~ time`. Thus, `y ~ day` is valid. Formulas such as `log(y) ~ day`,
-`y ~ I(day^2)`, `y ~ day + group`, and `y ~ day * group` are rejected because
-formula transformations, nonlinear time terms, covariates, and interactions
-are not supported by the current methodology. If a substantively meaningful
+Use **untransformed column names**, with time first: `outcome ~ time` or
+`outcome ~ time + covariate1 + covariate2`. For example, `y ~ day + group`
+adds a baseline group covariate when the data contain it. See
+[Covariate Adjustment](covariate-adjustment.html) for a complete example.
+Formulas such as `log(y) ~ day`, `y ~ I(day^2)`, and `y ~ day * group` are
+rejected because formula transformations, nonlinear time terms, and
+interactions are not supported. If a substantively meaningful
 transformed outcome is needed, create it as a clearly named numeric column
 before fitting; the resulting effect is measured in that column's units.
 
@@ -100,7 +102,7 @@ pre-event forecast.
 plot(fit, type = "counterfactual")
 ```
 
-Dark points are observed daily means. The coral line is the fitted pre-event
+Dark points are observed daily means. The gray line is the fitted pre-event
 trend and its continuation. Open points mark the forecast no-event means;
 blue vertical gaps are the day-specific estimates.
 

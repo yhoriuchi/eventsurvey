@@ -116,17 +116,21 @@ error.
 ## Can I add covariates or nonlinear trends?
 
 <details>
-<summary>Not yet; use a simple outcome ~ time formula.</summary>
+<summary>Yes to additive baseline covariates; nonlinear time trends remain unsupported.</summary>
 
-Not in the current public API. Both `eventsurvey()` and
-`eventsurvey_summary()` require exactly two untransformed column names, such as
-`y ~ day` or `period_mean ~ day`. They reject formula transformations,
-nonlinear time terms, additional variables, and interactions. For example,
-`y ~ I(day^2)`, `y ~ day + covariate`, and `y ~ day * group` are invalid.
+Use `eventsurvey(y ~ day + age + education, data)` with time first and
+untransformed columns. Numeric covariates enter linearly; categorical columns
+enter as indicators. Every fitting window must identify all coefficients,
+and each used period needs at least two complete responses.
 
-The research source explored broader specifications, but their rolling fits
-require fully validated uncertainty calculations. The public release favors a
-smaller, auditable implementation. A substantively justified transformed
+Forecasts use each forecast period's covariate distribution. Use baseline
+characteristics that cannot be affected by the event, and examine rolling
+forecast errors: adding covariates need not improve out-of-sample fit or
+precision. See [Covariate Adjustment](covariate-adjustment.html).
+
+`eventsurvey_summary()` remains time-only because counts, outcome means, and
+outcome variances omit the necessary joint information. Formula transformations,
+nonlinear time terms, and interactions remain unsupported. A substantively justified transformed
 outcome may be created as an explicit numeric column before fitting; the
 reported effect is then in that column's units.
 

@@ -45,11 +45,15 @@ plot.eventsurvey <- function(x,
         )
       }
       target <- x$fitted$relative_period
-      built <- build_design(
-        x$daily, x$settings$window, target,
-        x$settings$schedule, x$settings$event_day
-      )
-      inner <- estimate_days(built, x$daily, alpha = 1 - inner_level)
+      if (!is.null(x$inference)) {
+        inner <- covariate_days(x$fitted, x$inference, x$reference, 1 - inner_level)
+      } else {
+        built <- build_design(
+          x$daily, x$settings$window, target,
+          x$settings$schedule, x$settings$event_day
+        )
+        inner <- estimate_days(built, x$daily, alpha = 1 - inner_level)
+      }
       if (x$settings$event_day == "include" &&
         !x$settings$report_event_day) {
         inner <- inner[inner$relative_period != 0, , drop = FALSE]
@@ -178,10 +182,14 @@ plot.eventsurvey <- function(x,
 
   fit_days <- x$settings$fit_periods
   fit_data <- daily[daily$relative_period %in% fit_days, , drop = FALSE]
-  model <- stats::lm(mean ~ relative_period, data = fit_data, weights = n)
   line_days <- sort(c(fit_days, x$fitted$relative_period))
-  line_data <- data.frame(relative_period = line_days)
-  line_data$counterfactual <- stats::predict(model, newdata = line_data)
+  if (!is.null(x$counterfactual_path)) {
+    line_data <- x$counterfactual_path
+  } else {
+    model <- stats::lm(mean ~ relative_period, data = fit_data, weights = n)
+    line_data <- data.frame(relative_period = line_days)
+    line_data$counterfactual <- stats::predict(model, newdata = line_data)
+  }
   observed <- daily[daily$relative_period %in% line_days, , drop = FALSE]
   ggplot2::ggplot() +
     ggplot2::geom_vline(

@@ -37,6 +37,7 @@ articles:
   desc: Prepare respondent- or period-level data and handle common fieldwork patterns.
   contents:
   - data-preparation
+  - covariate-adjustment
   - summary-data
   - automatic-diagnostics
   - sparse-survey-schedules
