@@ -29,6 +29,16 @@ Because the sparse dataset is a subset of the complete dataset, respondents on
 the retained dates have exactly the same outcomes in both analyses. The only
 difference is the fieldwork schedule.
 
+## Calibration and elapsed horizons
+
+Since version 0.3.0, `calibration = "estimand"` is the default. It matches the
+actual elapsed forecast horizons of the final analysis and retains only
+complete pre-event reference windows. With missing periods, it may use fewer
+windows than the former observed-period algorithm, or stop when none match.
+It does not interpolate missing observations. The observed-period rolling
+examples below describe `calibration = "pooled"`, which preserves that earlier
+construction. See [Methodology](methodology.html) for the different assumptions.
+
 ## Create complete and sparse schedules
 
 ```{r setup}
@@ -45,14 +55,14 @@ fit_complete <- eventsurvey(
   y ~ day,
   complete,
   event_time = 0,
-  window = 6
+  window = 6, calibration = "pooled"
 )
 
 fit_sparse <- eventsurvey(
   y ~ day,
   sparse,
   event_time = 0,
-  window = 6
+  window = 6, calibration = "pooled"
 )
 ```
 
@@ -66,7 +76,7 @@ plot(fit_sparse, type = "counts")
 
 ## Inspect what the package detected
 
-The default `schedule = "observed"` uses the requested number of dates with
+The combination `schedule = "observed", calibration = "pooled"` uses the requested number of dates with
 responses. It does not renumber those dates: their actual time values enter
 the trend and forecast calculations. The fitted object records every gap and
 the elapsed span of the final windows.

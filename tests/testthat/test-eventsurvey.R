@@ -27,11 +27,11 @@ test_that("the core estimator returns coherent results", {
   expect_equal(nrow(fit$days), 6)
   expect_equal(fit$days$relative_period, 1:6)
   expect_equal(fit$estimate$n_windows, 12)
-  expect_equal(fit$estimate$n_reference, 72)
+  expect_equal(fit$estimate$n_reference, 12)
   expect_lt(fit$estimate$conf_low, fit$estimate$effect)
   expect_gt(fit$estimate$conf_high, fit$estimate$effect)
   expect_gte(fit$estimate$conf_low, -Inf)
-  expect_equal(max(abs(fit$reference$error)), fit$estimate$bias_bound)
+  expect_equal(max(abs(fit$reference_average$error)), fit$estimate$bias_bound)
 })
 
 test_that("compact printing omits the formula environment", {
@@ -215,7 +215,7 @@ test_that("calendar gaps are diagnosed and strict mode remains available", {
   expect_equal(fit$settings$pre_event_span, 12L)
   expect_equal(fit$settings$fit_span, 5L)
   expect_equal(nrow(fit$windows), fit$estimate$n_windows)
-  expect_true(any(fit$windows$forecast_span > 4L))
+  expect_true(all(fit$windows$forecast_span == 4L))
   expect_match(
     paste(capture.output(fit), collapse = "\n"),
     "missing pre/forecast periods: 1 / 0"
@@ -237,7 +237,8 @@ test_that("insufficient history fails clearly", {
   dat <- simulate_eventsurvey(seed = 13, pre = 12, post = 6)
   expect_error(
     eventsurvey(
-      y ~ day, dat[dat$day >= -7, ], 0, window = 4,
+      y ~ day, dat[dat$day >= -7, ], 0,
+      window = 4,
       event_day = "include"
     ),
     "At least 8"
@@ -284,7 +285,8 @@ test_that("plot methods return ggplot objects", {
     expect_s3_class(plot(fit, type = type), "ggplot")
   }
   counterfactual_plot <- plot(fit, type = "counterfactual")
-  expected_periods <- sort(unique(c(0,
+  expected_periods <- sort(unique(c(
+    0,
     fit$settings$fit_periods,
     fit$fitted$relative_period
   )))
@@ -362,7 +364,7 @@ test_that("published application summaries reproduce manuscript tables", {
   fit_p <- eventsurvey_summary(mean ~ day, privacy,
     n = n, variance = variance, event_time = 0, window = 5,
     event_day = "include", report_event_day = FALSE,
-    schedule = "observed"
+    schedule = "observed", calibration = "pooled"
   )
   expect_equal(round(fit_p$days$effect, 3), c(-0.115, -0.050, -0.512, -0.050))
   expect_equal(round(fit_p$estimate$bias_bound, 3), 0.780)
@@ -372,7 +374,7 @@ test_that("published application summaries reproduce manuscript tables", {
   fit_r <- eventsurvey_summary(mean ~ day, procedural,
     n = n, variance = variance, event_time = 0, window = 7,
     event_day = "include", report_event_day = FALSE,
-    schedule = "observed"
+    schedule = "observed", calibration = "pooled"
   )
   expect_equal(
     round(fit_r$days$effect, 3),

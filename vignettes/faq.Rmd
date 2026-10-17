@@ -46,7 +46,9 @@ diagnostic reproduce the one-period gap at the event. More history produces
 more matched reference forecasts and a more informative diagnostic.
 
 If `event_day = "include"` is substantively justified, twice the window length
-is sufficient because there is no skipped period.
+is the minimum requirement because there is no skipped period.
+Sparse schedules can require more history to obtain a complete window with
+the final elapsed forecast horizons.
 
 </details>
 
@@ -55,10 +57,12 @@ is sufficient because there is no skipped period.
 <details>
 <summary>Sparse observed dates are supported by default, without interpolation.</summary>
 
-The default forms windows from consecutive observed survey periods. It still
-uses their actual time values, automatically detects missing dates, and reports
-the elapsed span of each window. Thus, six observed survey days may span more
-than six calendar days, but the intervening gaps are not silently compressed.
+The default fits successive observed survey periods and calibrates using
+complete pre-event windows that match the final elapsed forecast horizons.
+Actual time values enter the model, and gaps are not compressed or
+interpolated. It stops if no complete matching window exists. Pooled
+calibration retains the earlier construction from ordered observed periods,
+which can span different calendar horizons; see [Methodology](methodology.html).
 
 </details>
 
@@ -67,11 +71,13 @@ than six calendar days, but the intervening gaps are not silently compressed.
 <details>
 <summary>The package records the gap and uses the remaining observed periods.</summary>
 
-The default continues with the remaining observed periods and records the date
+The package records the date
 in `fit$settings$missing_pre_periods` or
 `fit$settings$missing_forecast_periods`. It does not interpolate an outcome for
 the empty date. Use `fit$windows` and the fitted settings to inspect elapsed
-fitting and forecasting spans. If uninterrupted dates are required by the
+fitting and forecasting spans. Estimand-specific calibration requires at least
+one complete pre-event window matching the final elapsed horizons; otherwise
+it stops with an explanation. If uninterrupted dates are required by the
 design, set `schedule = "consecutive"`; the package then stops and identifies
 the gaps.
 
@@ -110,6 +116,25 @@ sensitivity over plausible choices rather than optimizing significance.
 The conventional interval accounts only for sampling variation conditional on
 the line being correct. The honest interval also allows calibrated forecast
 error.
+
+</details>
+
+## What changed in version 0.3.0?
+
+<details>
+<summary>Estimand-specific calibration is now the default; pooled calibration remains available.</summary>
+
+`calibration = "estimand"` uses matching-horizon errors for daily effects and
+signed within-window average errors for average effects. It includes sampling
+uncertainty in those errors and their covariance with the effect estimate.
+Use `calibration = "pooled"` to reproduce the earlier method, which used all
+individual reference errors for both targets. This works in both estimation
+interfaces and with covariate adjustment.
+
+Each method needs its corresponding population bias restriction. Smaller
+observed errors do not establish the restriction, and narrower intervals alone
+do not establish better coverage. Daily intervals remain pointwise. See
+[Methodology](methodology.html) and [Sensitivity Analysis](sensitivity.html).
 
 </details>
 

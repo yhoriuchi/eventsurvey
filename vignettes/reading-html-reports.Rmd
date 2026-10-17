@@ -52,11 +52,14 @@ The table distinguishes two intervals:
 
 - The **conventional interval** reflects sampling uncertainty while treating
   the fitted pre-event trend as correct.
-- The **honest interval** adds the bias bound calibrated from matched rolling
-  pre-event forecast errors. This is the package's primary interval.
+- The **honest interval** accounts for bounded extrapolation bias and sampling
+  uncertainty in the selected reference errors, including covariance with the
+  effect estimate. This is the package's primary interval.
 
-The **bias bound** is the largest absolute matched reference-forecast error.
-The counts of **reference windows** and **reference forecasts** show how much
+The **bias bound** is the largest absolute signed window-average reference
+error under estimand-specific calibration, or the largest absolute individual
+reference error under pooled calibration. The report identifies which method
+was used. The counts of **reference windows** and **average-calibration references** show how much
 pre-event evidence was available to calibrate that bound.
 
 ## Automatic diagnostics

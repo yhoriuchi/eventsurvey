@@ -12,7 +12,8 @@ eventsurvey(
   event_day = c("exclude", "include"),
   report_event_day = TRUE,
   alpha = 0.05,
-  schedule = c("observed", "consecutive")
+  schedule = c("observed", "consecutive"),
+  calibration = c("estimand", "pooled")
 )
 }
 \arguments{
@@ -47,16 +48,32 @@ results and plots. This argument applies only when
 containing responses and supports sparse survey schedules. \code{"consecutive"}
 requires every period on the time scale to be represented. In either mode,
 models use the actual time values rather than compressing gaps.}
+
+\item{calibration}{How pre-event errors calibrate the bias bound. The default,
+\code{"estimand"}, uses matching elapsed horizons for daily effects and the
+signed within-window average error for the window-average effect.
+\code{"pooled"} reproduces the previous method, using all individual reference
+errors for every target. This choice changes the population bias assumption.
+Estimand calibration uses common complete reference windows for all targets:
+each fits \code{window} observed pre-event periods and forecasts at the same
+elapsed offsets from its last fitting period as the final analysis. All
+forecast dates must be observed before the event. With sparse schedules,
+fitting spans can differ, and no matching windows produces an error.
+Pooled calibration retains the rolling windows defined by \code{schedule}.}
 }
 \value{
 An object of class \code{eventsurvey} containing the estimate, honest and
 conventional intervals, day-specific results, reference forecast errors,
-rolling-window diagnostics, automatic design and data checks, daily
+signed window-average reference errors (\code{reference_average}, including
+their standard errors), rolling-window diagnostics, automatic design and data checks, daily
 summaries, and analysis settings. Covariate-adjusted objects also contain
 \code{inference} (covariance components used for intervals),
 \code{counterfactual_path} (period-average predictions from the final fit), and
 \code{model_diagnostics} (parameter count, residual degrees of freedom, and
-fitting-window RMSEs). Respondent data are not stored in the fitted object.
+fitting-window RMSEs). \code{estimate$n_reference} counts the references used
+for the average interval. \code{days} records each target's elapsed \code{horizon},
+estimated \code{bias_bound}, and \code{n_reference}. Raw individual forecast errors
+remain in \code{reference} for diagnostics. Respondent data are not stored.
 }
 \description{
 \code{eventsurvey()} extrapolates the pre-event outcome trend into a short
@@ -98,9 +115,15 @@ degrees of freedom. Missing outcome, time, or covariates cause complete-case
 omission with a warning. Covariates do not guarantee better forecasts or
 narrower intervals; inspect rolling errors and choose the specification
 without using post-event outcomes.
-Daily intervals require a day-specific bias bound and are pointwise, not
-a simultaneous confidence band; the average interval requires the bound
-on average forecast bias.
+With \code{calibration = "estimand"}, daily effects use reference errors at the
+same elapsed forecast horizon; the average effect uses signed averages
+within each complete reference window. Each interval requires its own
+population bias bound: absolute target bias must not exceed the largest
+absolute corresponding population reference error. This tighter restriction
+is not implied by the pooled bound. Sampling uncertainty in the reference
+errors and their covariance with the effect estimate enter the interval.
+Daily intervals are pointwise, not a simultaneous confidence band.
+Both calibrations use equal period weights for the average estimand.
 
 Every fitted object contains automatic diagnostics. A check receives
 \code{"Review"} status when calendar periods are missing, any observed period has

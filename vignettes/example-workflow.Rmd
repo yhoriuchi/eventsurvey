@@ -60,7 +60,9 @@ head(fit$windows)
 `conventional_low` and `conventional_high` treat the linear extrapolation as
 correct. `conf_low` and `conf_high` are the main honest interval. They combine
 sampling uncertainty with the bounded misspecification assumption. The
-`bias_bound` is the largest absolute rolling reference error.
+`bias_bound` is the largest absolute signed window-average reference error
+under the default estimand-specific calibration. With `calibration = "pooled"`,
+it is the largest absolute individual reference error.
 
 ```{r counterfactual}
 plot(fit)

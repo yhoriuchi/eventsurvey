@@ -48,6 +48,24 @@ eventsurvey_report(fit)
 The fitted object checks the data and design automatically, and the HTML report
 brings the main estimates, diagnostics, and figures together in one file.
 
+## Choose calibration
+
+The default matches placebo calibration to the estimand: daily effects use
+errors at the same elapsed forecast horizon, and the window-average effect
+uses signed average errors within each placebo window. Each requires the
+corresponding population bias restriction; daily intervals are pointwise.
+
+```r
+fit <- eventsurvey(y ~ day, sample_data, calibration = "estimand")
+pooled <- eventsurvey(y ~ day, sample_data, calibration = "pooled")
+```
+
+`"pooled"` reproduces the calibration used before version 0.3.0. The option
+also applies to `eventsurvey_summary()` and covariate-adjusted models.
+Inspect `fit$reference_average` and the daily bias bounds in `fit$days`.
+See [Methodology](articles/methodology.html) for the assumptions, inference,
+and matching requirements for sparse surveys.
+
 ## Add pre-event covariates
 
 With respondent-level data, put time first and add baseline characteristics:

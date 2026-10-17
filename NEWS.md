@@ -1,3 +1,23 @@
+# eventsurvey 0.3.0
+
+* Changes the default to `calibration = "estimand"` in both estimation
+  interfaces. Daily effects use matching elapsed forecast horizons; the
+  window-average effect uses signed average errors within placebo windows.
+  Use `calibration = "pooled"` to reproduce the previous calibration and
+  rolling-window construction. Point estimates are unchanged.
+* Uses common complete reference windows with the final elapsed forecast
+  horizons, including on sparse schedules. Insufficient matching history
+  produces an informative error; there is no automatic pooled fallback.
+* Propagates reference-average sampling uncertainty and covariance with the
+  effect estimate, including shared fits and forecast covariate means.
+  Daily intervals remain pointwise. Validity requires the corresponding
+  population bias restriction and sampling assumptions.
+* Exposes signed window-average references and their standard errors in
+  `reference_average`; daily results include horizon, estimated bias bound,
+  and reference count. Console output and HTML reports identify calibration.
+* Adds an inference derivation, independent covariance and compatibility
+  tests, and a reproducible simulation/stratified-bootstrap validation script.
+
 # eventsurvey 0.2.0
 
 * Adds additive respondent-level covariates using `outcome ~ time + x1 + x2`.

@@ -29,8 +29,8 @@ for (scenario in scenarios) {
   draws <- lapply(seq_len(replications), function(b) {
     dat <- generate_data(10000L + b, scenario)
     fits <- list(
-      time_only = eventsurvey(y ~ day, dat, window = 4),
-      adjusted = eventsurvey(y ~ day + x, dat, window = 4)
+      time_only = eventsurvey(y ~ day, dat, window = 4, calibration = "pooled"),
+      adjusted = eventsurvey(y ~ day + x, dat, window = 4, calibration = "pooled")
     )
     do.call(rbind, lapply(names(fits), function(name) {
       e <- fits[[name]]$estimate
@@ -65,7 +65,7 @@ print(results, digits = 4, row.names = FALSE)
 # Independent stratified bootstrap ---------------------------------------
 # Refit with stats::lm(), without using the package covariance implementation.
 dat <- generate_data(7391, "heteroskedastic", n = 200)
-fit <- eventsurvey(y ~ day + x, dat, window = 4)
+fit <- eventsurvey(y ~ day + x, dat, window = 4, calibration = "pooled")
 reference <- fit$reference
 stacked_estimates <- function(d) {
   model <- lm(y ~ day + x, data = d[d$day %in% -4:-1, ])

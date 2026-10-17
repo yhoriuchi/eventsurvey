@@ -38,9 +38,15 @@
 #' omission with a warning. Covariates do not guarantee better forecasts or
 #' narrower intervals; inspect rolling errors and choose the specification
 #' without using post-event outcomes.
-#' Daily intervals require a day-specific bias bound and are pointwise, not
-#' a simultaneous confidence band; the average interval requires the bound
-#' on average forecast bias.
+#' With `calibration = "estimand"`, daily effects use reference errors at the
+#' same elapsed forecast horizon; the average effect uses signed averages
+#' within each complete reference window. Each interval requires its own
+#' population bias bound: absolute target bias must not exceed the largest
+#' absolute corresponding population reference error. This tighter restriction
+#' is not implied by the pooled bound. Sampling uncertainty in the reference
+#' errors and their covariance with the effect estimate enter the interval.
+#' Daily intervals are pointwise, not a simultaneous confidence band.
+#' Both calibrations use equal period weights for the average estimand.
 #'
 #' Every fitted object contains automatic diagnostics. A check receives
 #' `"Review"` status when calendar periods are missing, any observed period has
@@ -73,14 +79,29 @@
 #'   requires every period on the time scale to be represented. In either mode,
 #'   models use the actual time values rather than compressing gaps.
 #' @param alpha Significance level for confidence intervals.
+#' @param calibration How pre-event errors calibrate the bias bound. The default,
+#'   `"estimand"`, uses matching elapsed horizons for daily effects and the
+#'   signed within-window average error for the window-average effect.
+#'   `"pooled"` reproduces the previous method, using all individual reference
+#'   errors for every target. This choice changes the population bias assumption.
+#'   Estimand calibration uses common complete reference windows for all targets:
+#'   each fits `window` observed pre-event periods and forecasts at the same
+#'   elapsed offsets from its last fitting period as the final analysis. All
+#'   forecast dates must be observed before the event. With sparse schedules,
+#'   fitting spans can differ, and no matching windows produces an error.
+#'   Pooled calibration retains the rolling windows defined by `schedule`.
 #' @return An object of class `eventsurvey` containing the estimate, honest and
 #'   conventional intervals, day-specific results, reference forecast errors,
-#'   rolling-window diagnostics, automatic design and data checks, daily
+#'   signed window-average reference errors (`reference_average`, including
+#'   their standard errors), rolling-window diagnostics, automatic design and data checks, daily
 #'   summaries, and analysis settings. Covariate-adjusted objects also contain
 #'   `inference` (covariance components used for intervals),
 #'   `counterfactual_path` (period-average predictions from the final fit), and
 #'   `model_diagnostics` (parameter count, residual degrees of freedom, and
-#'   fitting-window RMSEs). Respondent data are not stored in the fitted object.
+#'   fitting-window RMSEs). `estimate$n_reference` counts the references used
+#'   for the average interval. `days` records each target's elapsed `horizon`,
+#'   estimated `bias_bound`, and `n_reference`. Raw individual forecast errors
+#'   remain in `reference` for diagnostics. Respondent data are not stored.
 #' @seealso `vignette("automatic-diagnostics", package = "eventsurvey")` for
 #'   examples of every automatic check and guidance on `Review` statuses.
 #' @rdname estimate_eventsurvey
@@ -98,10 +119,12 @@
 eventsurvey <- function(formula, data, event_time = 0, window = 6L,
                         event_day = c("exclude", "include"),
                         report_event_day = TRUE, alpha = 0.05,
-                        schedule = c("observed", "consecutive")) {
+                        schedule = c("observed", "consecutive"),
+                        calibration = c("estimand", "pooled")) {
   cl <- match.call()
   event_day <- match.arg(event_day)
   schedule <- match.arg(schedule)
+  calibration <- match.arg(calibration)
   validate_scalar(window, "window", lower = 2, integer = TRUE)
   validate_scalar(alpha, "alpha", lower = 0, upper = 1, open = TRUE)
   if (!is.logical(report_event_day) || length(report_event_day) != 1L ||
@@ -174,7 +197,7 @@ eventsurvey <- function(formula, data, event_time = 0, window = 6L,
       call. = FALSE
     )
   }
-  built <- build_design(ps, window, target, schedule, event_day)
+  built <- build_design(ps, window, target, schedule, event_day, calibration)
   result <- if (adjusted) {
     estimate_covariates(mf, day, built, ps, alpha)
   } else {
@@ -188,7 +211,7 @@ eventsurvey <- function(formula, data, event_time = 0, window = 6L,
     window = as.integer(window), alpha = alpha,
     event_time = event_time, event_day = event_day,
     report_event_day = report_event_day,
-    schedule = schedule,
+    schedule = schedule, calibration = calibration,
     missing_pre_periods = missing_pre,
     n_missing_pre_periods = length(missing_pre),
     missing_forecast_periods = missing_post,
@@ -213,7 +236,8 @@ eventsurvey <- function(formula, data, event_time = 0, window = 6L,
   diagnostics <- analysis_diagnostics(ps, settings, built)
   structure(list(
     estimate = result$estimate, days = day_results,
-    reference = result$reference, windows = built$windows, daily = ps,
+    reference = result$reference, reference_average = result$reference_average,
+    windows = built$windows, daily = ps,
     fitted = result$fitted, settings = settings, diagnostics = diagnostics,
     call = cl, formula = formula,
     inference = result$inference,
@@ -264,10 +288,12 @@ eventsurvey_summary <- function(formula, data, n = n, variance = variance,
                                 window = 6L,
                                 event_day = c("exclude", "include"),
                                 report_event_day = TRUE, alpha = 0.05,
-                                schedule = c("observed", "consecutive")) {
+                                schedule = c("observed", "consecutive"),
+                                calibration = c("estimand", "pooled")) {
   cl <- match.call()
   event_day <- match.arg(event_day)
   schedule <- match.arg(schedule)
+  calibration <- match.arg(calibration)
   validate_scalar(window, "window", lower = 2, integer = TRUE)
   validate_scalar(alpha, "alpha", lower = 0, upper = 1, open = TRUE)
   if (!is.logical(report_event_day) || length(report_event_day) != 1L ||
@@ -324,7 +350,7 @@ eventsurvey_summary <- function(formula, data, n = n, variance = variance,
   if (sum(ps$relative_period < 0) < minimum_pre) {
     stop("At least ", minimum_pre, " pre-event periods are required.", call. = FALSE)
   }
-  built <- build_design(ps, window, target, schedule, event_day)
+  built <- build_design(ps, window, target, schedule, event_day, calibration)
   result <- estimate_design(built, ps, alpha)
   day_results <- estimate_days(built, ps, alpha)
   if (event_day == "include" && !report_event_day) {
@@ -334,7 +360,7 @@ eventsurvey_summary <- function(formula, data, n = n, variance = variance,
     window = as.integer(window), alpha = alpha,
     event_time = event_time, event_day = event_day,
     report_event_day = report_event_day,
-    schedule = schedule,
+    schedule = schedule, calibration = calibration,
     missing_pre_periods = missing_pre,
     n_missing_pre_periods = length(missing_pre),
     missing_forecast_periods = missing_post,
@@ -353,7 +379,8 @@ eventsurvey_summary <- function(formula, data, n = n, variance = variance,
   diagnostics <- analysis_diagnostics(ps, settings, built)
   structure(list(
     estimate = result$estimate, days = day_results,
-    reference = result$reference, windows = built$windows, daily = ps,
+    reference = result$reference, reference_average = result$reference_average,
+    windows = built$windows, daily = ps,
     fitted = result$fitted, settings = settings, diagnostics = diagnostics,
     call = cl, formula = formula
   ), class = "eventsurvey")
@@ -422,7 +449,7 @@ print.eventsurvey <- function(x, ...) {
     cat("Covariates:", paste(x$settings$covariates, collapse = ", "), "\n")
   }
   cat(
-    "Window:", x$settings$window, "periods | reference forecasts:",
+    "Window:", x$settings$window, "periods | average-calibration references:",
     est$n_reference, "\n"
   )
   cat(
@@ -431,6 +458,7 @@ print.eventsurvey <- function(x, ...) {
     x$settings$n_missing_pre_periods, "/",
     x$settings$n_missing_forecast_periods, "\n"
   )
+  cat("Calibration:", calibration_method(x$settings), "\n")
   cat(sprintf("Average effect: %.3f\n", est$effect))
   cat(sprintf(
     "Honest %.0f%% CI: [%.3f, %.3f]\n",
@@ -551,6 +579,7 @@ print.summary.eventsurvey <- function(x, ...) {
   cat("  Fit and forecast window:", x$settings$window, "periods\n")
   cat("  Event period:", x$settings$event_day, "\n")
   cat("  Period schedule:", x$settings$schedule, "\n")
+  cat("  Calibration:", calibration_method(x$settings), "\n")
   cat("  Missing pre-event periods:", x$settings$n_missing_pre_periods)
   if (x$settings$n_missing_pre_periods > 0L) {
     cat(" (", paste(x$settings$missing_pre_periods, collapse = ", "), ")", sep = "")

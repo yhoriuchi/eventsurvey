@@ -14,6 +14,7 @@ fit_bateson <- eventsurvey_summary(
   event_time = 0,
   window = 7,
   event_day = "include",
+  calibration = "pooled",
   report_event_day = FALSE
 )
 

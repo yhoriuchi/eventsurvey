@@ -46,11 +46,14 @@ plot.eventsurvey <- function(x,
       }
       target <- x$fitted$relative_period
       if (!is.null(x$inference)) {
-        inner <- covariate_days(x$fitted, x$inference, x$reference, 1 - inner_level)
+        inner <- covariate_days(
+          x$fitted, x$inference, x$reference, 1 - inner_level,
+          calibration_method(x$settings)
+        )
       } else {
         built <- build_design(
           x$daily, x$settings$window, target,
-          x$settings$schedule, x$settings$event_day
+          x$settings$schedule, x$settings$event_day, calibration_method(x$settings)
         )
         inner <- estimate_days(built, x$daily, alpha = 1 - inner_level)
       }

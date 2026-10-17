@@ -42,11 +42,13 @@ event effects are quantities to be estimated, not columns supplied to
 ## 2. Estimate the effect
 
 The formula contains the outcome and time variables. By default,
-`event_time = 0`, `event_day = "exclude"`, and `window = 6`: the model uses the
+`event_time = 0`, `event_day = "exclude"`, `window = 6`, and
+`calibration = "estimand"`: the model uses the
 final six observed pre-event periods, skips the event period, and forecasts
 the first six observed post-event periods. The rolling pre-event exercises
-reproduce this six-period fit, one-period gap, and six-period forecast to
-construct matched forecast errors.
+fit six observed periods and match the actual elapsed forecast horizons of
+the final analysis. With daily observations, this preserves the omitted Day 0.
+On sparse schedules, only complete windows with those forecast offsets are used.
 
 Use **untransformed column names**, with time first: `outcome ~ time` or
 `outcome ~ time + covariate1 + covariate2`. For example, `y ~ day + group`
@@ -96,6 +98,31 @@ It is generally wider than the conventional interval because it allows the
 post-event extrapolation to be wrong by as much as the worst comparable
 pre-event forecast.
 
+### Choose calibration
+
+The default matches calibration to each estimand:
+
+- **Daily effect:** use reference errors at the same elapsed forecast horizon.
+- **Average effect:** average signed errors within each placebo window, then
+  use the largest absolute window average.
+
+To reproduce the method used before version 0.3.0, choose pooled calibration:
+
+```{r calibration-options}
+fit_specific <- eventsurvey(y ~ day, sample_data, calibration = "estimand")
+fit_pooled <- eventsurvey(y ~ day, sample_data, calibration = "pooled")
+fit_specific$reference_average
+```
+
+Pooled calibration uses all individual reference errors for every target.
+The point estimates are unchanged, but the two methods impose different
+population bias bounds. Estimand-specific intervals require the bound for
+each daily or average target; the pooled assumption does not imply those
+restrictions. Daily intervals are pointwise, not a simultaneous band.
+The same option works with covariates and `eventsurvey_summary()`.
+See [Methodology and Assumptions](methodology.html) for the inference argument
+and [Sensitivity Analysis](sensitivity.html) for a direct comparison.
+
 ## 3. See what was extrapolated
 
 ```{r counterfactual}
@@ -116,8 +143,9 @@ plot(fit, type = "effects")
 plot(fit, type = "diagnostics")
 ```
 
-Every line is one rolling fit. Its points show forecast errors one through six
-periods ahead. These are not placebo treatment effects; they are direct checks
+Every line is one rolling fit. Its points show the errors for the six
+forecast target dates. With daily observations and an excluded Day 0, these
+are elapsed horizons two through seven after the last fitting day. These are not placebo treatment effects; they are direct checks
 of the same extrapolation task used after the event.
 
 ## Event-day conventions
@@ -144,9 +172,10 @@ The second alternative retains the event period in the window-average
 estimate but suppresses its day-specific display; use it only when that
 estimand is substantively intended. These choices should follow the survey's
 fieldwork and event timing, not whichever result is most favorable. Under the
-default exclusion rule, the diagnostic also skips one period between each
-rolling fit and its forecasts, requiring `2 * window + 1` observed pre-event
-periods.
+default exclusion rule with daily observations, the diagnostic also skips
+one period between each rolling fit and its forecasts. The interface requires
+at least `2 * window + 1` observed pre-event periods. Sparse schedules may
+need more history to supply a complete matching window.
 
 ## Also see
 

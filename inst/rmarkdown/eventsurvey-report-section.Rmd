@@ -1,6 +1,7 @@
 ```{r report-section-setup, include=FALSE}
 estimate <- fit$estimate[1L, , drop = FALSE]
 confidence_level <- 100 * (1 - fit$settings$alpha)
+calibration <- if (is.null(fit$settings$calibration)) "pooled" else fit$settings$calibration
 analysis_call <- paste(deparse(fit$call, width.cutoff = 500L), collapse = " ")
 section_level <- if (multiple_analyses) 3L else 2L
 section_heading <- function(text) {
@@ -31,6 +32,20 @@ if (length(fit$settings$covariates)) {
 }
 ```
 
+```{r calibration-description, results='asis', echo=FALSE}
+if (calibration == "estimand") {
+  cat("**Estimand-specific calibration.** Daily intervals use matching elapsed ",
+      "forecast horizons. The average interval uses signed window-average ",
+      "reference errors. Each requires the corresponding population bias bound; ",
+      "the pooled bound does not imply these restrictions. Daily intervals are ",
+      "pointwise, not a simultaneous band.\n\n", sep = "")
+} else {
+  cat("**Pooled calibration.** All individual reference forecast errors calibrate ",
+      "both daily and average effects under their pooled population bias bounds. ",
+      "Daily intervals are pointwise, not a simultaneous band.\n\n", sep = "")
+}
+```
+
 ```{r main-result}
 main_result <- data.frame(
   Quantity = c(
@@ -40,7 +55,7 @@ main_result <- data.frame(
     "Bias bound",
     "Honest interval",
     "Reference windows",
-    "Reference forecasts"
+    "Average-calibration references"
   ),
   Value = c(
     format_number(estimate$effect),
@@ -107,10 +122,20 @@ knitr::kable(effect_table, align = "r")
 
 `r section_heading("Forecast diagnostics")`
 
-These rolling pre-event forecast errors calibrate the misspecification bound.
+These are the individual rolling pre-event forecast errors. Estimand-specific
+calibration selects matching horizons for daily effects and averages signed
+errors within each window for the average effect. Pooled calibration uses all
+individual errors for each target.
 
 ```{r diagnostics}
 plot(fit, type = "diagnostics")
+```
+
+```{r average-references}
+if (calibration == "estimand" && !is.null(fit$reference_average)) {
+  knitr::kable(fit$reference_average, digits = 3,
+               caption = "Signed window-average reference errors and sampling standard errors")
+}
 ```
 
 `r section_heading("Survey coverage")`
@@ -167,6 +192,7 @@ settings <- data.frame(
     "Report event period",
     "Fit and forecast window",
     "Period schedule",
+    "Calibration",
     "Final fitting span",
     "Final forecast span",
     "Confidence level",
@@ -186,6 +212,7 @@ settings <- data.frame(
     },
     paste(fit$settings$window, "observed periods"),
     fit$settings$schedule,
+    calibration,
     paste(fit$settings$fit_span, "periods on the time scale"),
     paste(fit$settings$forecast_span, "periods on the time scale"),
     paste0(format_number(confidence_level, 0), "%"),

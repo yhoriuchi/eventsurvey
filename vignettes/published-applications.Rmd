@@ -23,6 +23,10 @@ suppressing its day-specific result. This differs from the package's safer
 default for new analyses, which excludes the event period when within-period
 exposure is unclear.
 
+These established reports use `calibration = "pooled"`. Their reproduction
+scripts specify it explicitly; version 0.3.0 defaults to estimand-specific
+calibration for new fits.
+
 ## Example reports
 
 | Example | Event and outcome | Report |
