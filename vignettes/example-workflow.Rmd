@@ -14,7 +14,8 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height
 
 This example follows the recommended sequence: inspect fieldwork, declare the
 analysis, fit once, examine diagnostics, and report both the estimate and the
-assumptions that support it.
+assumptions that support it. All main results below use the default
+estimand-specific calibration.
 
 ```{r}
 library(eventsurvey)
@@ -70,6 +71,33 @@ plot(fit)
 
 ```{r diagnostics}
 plot(fit, type = "diagnostics")
+```
+
+## Retain pooled calibration as a comparison
+
+Keep the model and target window unchanged. Estimand-specific calibration
+remains the main analysis; pooled calibration checks a different bias
+assumption.
+
+```{r pooled-comparison}
+fit_pooled <- eventsurvey(y ~ day, sample_data, calibration = "pooled")
+comparison <- rbind(
+  "Main: estimand-specific" = fit$estimate,
+  "Comparison: pooled" = fit_pooled$estimate
+)
+knitr::kable(
+  comparison[c("effect", "bias_bound", "conf_low", "conf_high")],
+  digits = 3
+)
+```
+
+Both methods can be included in one report with explicit labels:
+
+```{r, eval = FALSE}
+eventsurvey_report(list(
+  "Main: estimand-specific" = fit,
+  "Comparison: pooled" = fit_pooled
+))
 ```
 
 ## Minimum reporting checklist

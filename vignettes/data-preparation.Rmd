@@ -15,6 +15,10 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 `eventsurvey()` accepts a data frame or tibble with one respondent per row.
 Prepare a numeric outcome and one equally spaced time variable before fitting.
 
+All estimation examples below use the default estimand-specific calibration.
+For a clearly labeled pooled comparison with the same model and target
+periods, see [Sensitivity Analysis](sensitivity.html).
+
 ## Formula requirements
 
 Use one outcome column, put time first, and optionally add baseline covariates:

@@ -14,7 +14,10 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 
 `eventsurvey_report()` collects the estimates, diagnostics, figures, settings,
 and reproducibility information for an analysis in one self-contained HTML
-file. It does not change or re-estimate the fitted model.
+file. It does not change or re-estimate the fitted model. The examples use
+estimand-specific calibration as the main method. The published-application
+reports place these main analyses first and label the later pooled sections
+as comparisons.
 
 ```{r, eval = FALSE}
 fit <- eventsurvey(y ~ day, survey_data)
@@ -101,8 +104,10 @@ does not imply that the effect is constant over time.
 
 ## Forecast diagnostics
 
-The package repeatedly fits the same model in earlier pre-event windows and
-forecasts the following observed periods. The resulting errors measure how far
+The package repeatedly fits the same model in earlier pre-event windows.
+Under estimand-specific calibration it forecasts the same elapsed horizons
+as the final analysis, retaining complete matching windows. Pooled comparison
+analyses use the earlier observed-period rolling construction. The resulting errors measure how far
 the linear extrapolation missed when no focal event had yet occurred. Large or
 systematic errors indicate that the counterfactual trend is difficult to
 forecast and widen the honest interval. The blue dashed vertical line and its

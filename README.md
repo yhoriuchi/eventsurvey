@@ -56,7 +56,9 @@ uses signed average errors within each placebo window. Each requires the
 corresponding population bias restriction; daily intervals are pointwise.
 
 ```r
+# Main method
 fit <- eventsurvey(y ~ day, sample_data, calibration = "estimand")
+# Comparison using the earlier calibration
 pooled <- eventsurvey(y ~ day, sample_data, calibration = "pooled")
 ```
 

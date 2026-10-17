@@ -14,8 +14,25 @@ fit_bateson <- eventsurvey_summary(
   event_time = 0,
   window = 7,
   event_day = "include",
+  calibration = "estimand",
+  report_event_day = FALSE
+)
+
+# Pooled effects are a labeled comparison, not the main website figure.
+fit_bateson_pooled <- eventsurvey_summary(
+  mean ~ day,
+  data = bateson,
+  n = n,
+  variance = variance,
+  event_time = 0,
+  window = 7,
+  event_day = "include",
   calibration = "pooled",
   report_event_day = FALSE
+)
+effect_limits <- range(
+  fit_bateson$days$conf_low, fit_bateson$days$conf_high,
+  fit_bateson_pooled$days$conf_low, fit_bateson_pooled$days$conf_high
 )
 
 figure_dir <- file.path("vignettes", "figures")
@@ -46,7 +63,15 @@ save_figure(
 )
 save_figure(
   plot(fit_bateson, type = "effects", inner_level = 0.90) +
-    ggplot2::labs(y = "Estimated effect on trust"),
+    ggplot2::labs(y = "Estimated effect on trust") +
+    ggplot2::coord_cartesian(ylim = effect_limits),
   "bateson-effects.png"
 )
 save_figure(plot(fit_bateson, type = "diagnostics"), "bateson-diagnostics.png")
+
+save_figure(
+  plot(fit_bateson_pooled, type = "effects", inner_level = 0.90) +
+    ggplot2::labs(y = "Estimated effect on trust") +
+    ggplot2::coord_cartesian(ylim = effect_limits),
+  "bateson-effects-pooled.png"
+)

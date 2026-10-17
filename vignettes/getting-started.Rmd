@@ -106,12 +106,21 @@ The default matches calibration to each estimand:
 - **Average effect:** average signed errors within each placebo window, then
   use the largest absolute window average.
 
-To reproduce the method used before version 0.3.0, choose pooled calibration:
+Keep estimand-specific calibration as the main method and label pooled
+calibration as a comparison with the method used before version 0.3.0:
 
 ```{r calibration-options}
 fit_specific <- eventsurvey(y ~ day, sample_data, calibration = "estimand")
 fit_pooled <- eventsurvey(y ~ day, sample_data, calibration = "pooled")
 fit_specific$reference_average
+comparison <- rbind(
+  "Main: estimand-specific" = fit_specific$estimate,
+  "Comparison: pooled" = fit_pooled$estimate
+)
+knitr::kable(
+  comparison[c("effect", "bias_bound", "conf_low", "conf_high")],
+  digits = 3
+)
 ```
 
 Pooled calibration uses all individual reference errors for every target.
@@ -157,12 +166,14 @@ when the event timing and fieldwork make its exposure status defensible.
 
 ```{r}
 fit_including_event <- eventsurvey(
-  y ~ day, sample_data, event_time = 0, window = 6,
+  y ~ day, sample_data,
+  event_time = 0, window = 6,
   event_day = "include"
 )
 
 fit_hidden <- eventsurvey(
-  y ~ day, sample_data, event_time = 0, window = 6,
+  y ~ day, sample_data,
+  event_time = 0, window = 6,
   event_day = "include",
   report_event_day = FALSE
 )

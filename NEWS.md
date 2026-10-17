@@ -18,6 +18,10 @@
 * Adds an inference derivation, independent covariance and compatibility
   tests, and a reproducible simulation/stratified-bootstrap validation script.
 
+* Regenerates published-application reports and figures with estimand-specific
+  calibration as the main method and explicitly labeled pooled comparisons.
+  Tutorials, including sparse schedules, follow the same convention.
+
 # eventsurvey 0.2.0
 
 * Adds additive respondent-level covariates using `outcome ~ time + x1 + x2`.

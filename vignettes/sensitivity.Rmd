@@ -15,6 +15,7 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 The window controls how local the trend is and how far it is extrapolated.
 Short windows adapt to local movement but estimate the line from less data;
 long windows use more observations but impose linearity over a longer span.
+The main window-sensitivity examples use estimand-specific calibration.
 
 ```{r}
 library(eventsurvey)
@@ -56,10 +57,13 @@ calibration_fits <- lapply(calibrations, function(method) {
 })
 lapply(seq_along(calibration_fits), function(i) {
   calibration_fits[[i]]$estimate |>
-    mutate(calibration = calibrations[i], .before = 1)
+    mutate(
+      method = if (i == 1L) "Main: estimand-specific" else "Comparison: pooled",
+      .before = 1
+    )
 }) |>
   bind_rows() |>
-  select(calibration, effect, bias_bound, n_reference, conf_low, conf_high)
+  select(method, effect, bias_bound, n_reference, conf_low, conf_high)
 ```
 
 The default average bound uses the largest absolute signed window-average

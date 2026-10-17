@@ -22,7 +22,8 @@ transformations, interactions, and nonlinear time trends remain unsupported.
 
 This simulation deliberately adds a strong baseline predictor and changing
 survey composition, so the role of adjustment can be checked against a known
-effect. These are synthetic observations, not an empirical application.
+effect. These are synthetic observations, not an empirical application. Both
+main models use the default estimand-specific calibration.
 
 ```{r setup}
 library(eventsurvey)
@@ -137,6 +138,26 @@ cause omission with a warning; inspect the resulting period counts.
 plot(adjusted, type = "effects", inner_level = 0.90)
 ```
 
+## Pooled calibration as a comparison
+
+Hold the adjusted model, observations, and target dates fixed. The main
+analysis continues to use estimand-specific calibration.
+
+```{r pooled-comparison}
+adjusted_pooled <- eventsurvey(
+  y ~ day + baseline + group, survey,
+  calibration = "pooled"
+)
+calibration_comparison <- rbind(
+  "Main: estimand-specific" = adjusted$estimate,
+  "Comparison: pooled" = adjusted_pooled$estimate
+)
+knitr::kable(
+  calibration_comparison[c("effect", "bias_bound", "conf_low", "conf_high")],
+  digits = 3
+)
+```
+
 The report and extraction methods work as usual:
 
 ```{r}
@@ -145,7 +166,13 @@ confint(adjusted)
 ```
 
 ```{r, eval = FALSE}
-eventsurvey_report(adjusted, "adjusted-report.html")
+eventsurvey_report(
+  list(
+    "Main: estimand-specific" = adjusted,
+    "Comparison: pooled" = adjusted_pooled
+  ),
+  "adjusted-report.html"
+)
 ```
 
 `eventsurvey_summary()` remains time-only. Counts, outcome means, and outcome
