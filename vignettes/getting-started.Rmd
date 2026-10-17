@@ -18,6 +18,24 @@ but its no-event counterpart is not. The central task is therefore to
 extrapolate the pre-event path and compare it with what was observed after the
 event.
 
+## Install a released version
+
+For the version used in these examples, install the fixed `v0.3.0` tag:
+
+```{r installation, eval = FALSE}
+install.packages("remotes")
+remotes::install_github("yhoriuchi/eventsurvey@v0.3.0")
+packageVersion("eventsurvey")
+```
+
+The [0.3.0 release notes](https://github.com/yhoriuchi/eventsurvey/releases/tag/v0.3.0)
+describe the estimand-specific default and the retained pooled option.
+To use subsequent development changes instead, install from `main`:
+
+```{r development-installation, eval = FALSE}
+remotes::install_github("yhoriuchi/eventsurvey", ref = "main")
+```
+
 ## 1. Prepare respondent-level data
 
 Each row of the data frame or tibble should be a respondent. The outcome must

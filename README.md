@@ -3,6 +3,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/yhoriuchi/eventsurvey/releases/latest"><img src="https://img.shields.io/github/v/release/yhoriuchi/eventsurvey?sort=semver" alt="Latest GitHub release" /></a>
   <a href="https://github.com/yhoriuchi/eventsurvey/actions/workflows/R-CMD-check.yaml"><img src="https://github.com/yhoriuchi/eventsurvey/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check status" /></a>
   <img src="https://img.shields.io/badge/CRAN-not%20published-lightgrey" alt="CRAN not published" />
   <img src="https://img.shields.io/badge/downloads-not%20available-lightgrey" alt="Downloads not available" />
@@ -18,12 +19,26 @@ automatic diagnostics, figures, and a shareable HTML report.
 
 ## Installation
 
-Install the development version from GitHub:
+Install the released **version 0.3.0** from its fixed GitHub tag:
 
 ```r
 install.packages("remotes")
-remotes::install_github("yhoriuchi/eventsurvey")
+remotes::install_github("yhoriuchi/eventsurvey@v0.3.0")
 ```
+
+See the [0.3.0 release notes](https://github.com/yhoriuchi/eventsurvey/releases/tag/v0.3.0)
+for the new estimand-specific default and the retained pooled option.
+Using a version tag makes the selected package revision reproducible.
+
+To install the development version, including changes made after the release:
+
+```r
+remotes::install_github("yhoriuchi/eventsurvey", ref = "main")
+```
+
+Check your installed package version with `packageVersion("eventsurvey")`.
+The release badge links to the [latest published release](https://github.com/yhoriuchi/eventsurvey/releases/latest);
+the website's navigation bar shows the version used to build its documentation.
 
 ## Quick start
 
