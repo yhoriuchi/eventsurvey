@@ -1,4 +1,4 @@
-# eventsurvey 0.3.0.9000
+# eventsurvey 0.4.0
 
 * Supports estimand-specific calibration only in both estimation interfaces.
 * Calibrates each daily effect using matching elapsed forecast horizons, then
