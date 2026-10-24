@@ -23,7 +23,7 @@ transformations, interactions, and nonlinear time trends remain unsupported.
 This simulation deliberately adds a strong baseline predictor and changing
 survey composition, so the role of adjustment can be checked against a known
 effect. These are synthetic observations, not an empirical application. Both
-main models use the default estimand-specific calibration.
+main models use estimand-specific calibration.
 
 ```{r setup}
 library(eventsurvey)

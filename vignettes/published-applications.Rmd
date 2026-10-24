@@ -46,7 +46,7 @@ covariance. Validity requires the daily population bias restrictions.
 ## Compare average effects
 
 The table shows estimates and 95% honest intervals regenerated with version
-0.3.0.9000, using the same estimator as release 0.4.0. It contains analytical
+0.4.1, using the same estimator as release 0.4.0. It contains analytical
 results only, not respondent records or input period summaries. Reference
 windows are counted separately for each outcome.
 

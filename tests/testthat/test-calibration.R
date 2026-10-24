@@ -112,19 +112,32 @@ test_that("one reference window and hidden event day retain every average compon
   }
 })
 
-test_that("only estimand calibration is accepted and inner intervals retain it", {
+test_that("automatic estimand calibration retains inner intervals", {
   fit <- eventsurvey(y ~ day, sample_data)
   other <- eventsurvey(y ~ day, sample_data, alpha = 0.1)
   inner <- plot(fit, "effects", inner_level = 0.9)$layers[[4]]$data
   expect_equal(inner$conf_low, other$days$conf_low)
   expect_equal(inner$conf_high, other$days$conf_high)
   expect_match(paste(capture.output(fit), collapse = "\n"), "Calibration: estimand")
-  for (method in c("pooled", "unknown")) {
-    expect_error(eventsurvey(y ~ day, sample_data, calibration = method), "arg")
-    expect_error(eventsurvey_summary(mean ~ day, calibration_summary_data(), calibration = method), "arg")
-    dat <- sample_data
-    set.seed(19)
-    dat$x <- rnorm(nrow(dat))
-    expect_error(eventsurvey(y ~ day + x, dat, calibration = method), "arg")
+})
+
+test_that("public estimators reject the removed calibration argument", {
+  expect_false("calibration" %in% names(formals(eventsurvey)))
+  expect_false("calibration" %in% names(formals(eventsurvey_summary)))
+  dat <- sample_data |>
+    dplyr::mutate(x = sin(dplyr::row_number()))
+  for (method in c("estimand", "pooled", "unknown")) {
+    expect_error(
+      eventsurvey(y ~ day, sample_data, calibration = method),
+      "unused argument"
+    )
+    expect_error(
+      eventsurvey_summary(mean ~ day, calibration_summary_data(), calibration = method),
+      "unused argument"
+    )
+    expect_error(
+      eventsurvey(y ~ day + x, dat, calibration = method),
+      "unused argument"
+    )
   }
 })

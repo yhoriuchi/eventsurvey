@@ -19,15 +19,15 @@ automatic diagnostics, figures, and a shareable HTML report.
 
 ## Installation
 
-Install version 0.4.0, which uses daily estimand-specific
+Install version 0.4.1, which uses daily estimand-specific
 calibration followed by aggregation for period averages:
 
 ```r
 install.packages("remotes")
-remotes::install_github("yhoriuchi/eventsurvey", ref = "v0.4.0")
+remotes::install_github("yhoriuchi/eventsurvey", ref = "v0.4.1")
 ```
 
-This command pins the installation to the `v0.4.0` release for reproducibility.
+This command pins the installation to the `v0.4.1` release for reproducibility.
 
 Check your installed package version with `packageVersion("eventsurvey")`.
 The release badge links to the [latest published release](https://github.com/yhoriuchi/eventsurvey/releases/latest);

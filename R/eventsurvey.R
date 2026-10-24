@@ -42,6 +42,10 @@
 #' omission with a warning. Covariates do not guarantee better forecasts or
 #' narrower intervals; inspect rolling errors and choose the specification
 #' without using post-event outcomes.
+#' Both interfaces always use estimand-specific calibration. Each reference
+#' window fits `window` observed pre-event periods and forecasts at the same
+#' elapsed offsets as the final analysis. All forecast dates must be observed
+#' before the event; no matching windows produces an error.
 #' Estimand-specific calibration uses reference errors at the same elapsed
 #' forecast horizon for each day. Absolute daily population bias must not
 #' exceed the largest absolute matching population reference error.
@@ -86,11 +90,6 @@
 #'   requires every period on the time scale to be represented. In either mode,
 #'   models use the actual time values rather than compressing gaps.
 #' @param alpha Significance level for confidence intervals.
-#' @param calibration The calibration method. Only `"estimand"` is supported.
-#'   Daily effects use matching elapsed forecast horizons. Each reference
-#'   window fits `window` observed pre-event periods and forecasts at the
-#'   same elapsed offsets as the final analysis. All forecast dates must be
-#'   observed before the event; no matching windows produces an error.
 #' @return An object of class `eventsurvey` containing the window-average
 #'   estimate, honest and conventional intervals, day-specific results,
 #'   individual reference forecast errors, rolling-window diagnostics,
@@ -121,12 +120,10 @@
 eventsurvey <- function(formula, data, event_time = 0, window = 6L,
                         event_day = c("exclude", "include"),
                         report_event_day = TRUE, alpha = 0.05,
-                        schedule = c("observed", "consecutive"),
-                        calibration = "estimand") {
+                        schedule = c("observed", "consecutive")) {
   cl <- match.call()
   event_day <- match.arg(event_day)
   schedule <- match.arg(schedule)
-  calibration <- match.arg(calibration, "estimand")
   validate_scalar(window, "window", lower = 2, integer = TRUE)
   validate_scalar(alpha, "alpha", lower = 0, upper = 1, open = TRUE)
   if (!is.logical(report_event_day) || length(report_event_day) != 1L ||
@@ -199,7 +196,7 @@ eventsurvey <- function(formula, data, event_time = 0, window = 6L,
       call. = FALSE
     )
   }
-  built <- build_design(ps, window, target, schedule, event_day, calibration)
+  built <- build_design(ps, window, target, schedule, event_day)
   result <- if (adjusted) {
     estimate_covariates(mf, day, built, ps, alpha)
   } else {
@@ -213,7 +210,7 @@ eventsurvey <- function(formula, data, event_time = 0, window = 6L,
     window = as.integer(window), alpha = alpha,
     event_time = event_time, event_day = event_day,
     report_event_day = report_event_day,
-    schedule = schedule, calibration = calibration,
+    schedule = schedule, calibration = "estimand",
     missing_pre_periods = missing_pre,
     n_missing_pre_periods = length(missing_pre),
     missing_forecast_periods = missing_post,
@@ -290,12 +287,10 @@ eventsurvey_summary <- function(formula, data, n = n, variance = variance,
                                 window = 6L,
                                 event_day = c("exclude", "include"),
                                 report_event_day = TRUE, alpha = 0.05,
-                                schedule = c("observed", "consecutive"),
-                                calibration = "estimand") {
+                                schedule = c("observed", "consecutive")) {
   cl <- match.call()
   event_day <- match.arg(event_day)
   schedule <- match.arg(schedule)
-  calibration <- match.arg(calibration, "estimand")
   validate_scalar(window, "window", lower = 2, integer = TRUE)
   validate_scalar(alpha, "alpha", lower = 0, upper = 1, open = TRUE)
   if (!is.logical(report_event_day) || length(report_event_day) != 1L ||
@@ -352,7 +347,7 @@ eventsurvey_summary <- function(formula, data, n = n, variance = variance,
   if (sum(ps$relative_period < 0) < minimum_pre) {
     stop("At least ", minimum_pre, " pre-event periods are required.", call. = FALSE)
   }
-  built <- build_design(ps, window, target, schedule, event_day, calibration)
+  built <- build_design(ps, window, target, schedule, event_day)
   result <- estimate_design(built, ps, alpha)
   day_results <- result$days
   if (event_day == "include" && !report_event_day) {
@@ -362,7 +357,7 @@ eventsurvey_summary <- function(formula, data, n = n, variance = variance,
     window = as.integer(window), alpha = alpha,
     event_time = event_time, event_day = event_day,
     report_event_day = report_event_day,
-    schedule = schedule, calibration = calibration,
+    schedule = schedule, calibration = "estimand",
     missing_pre_periods = missing_pre,
     n_missing_pre_periods = length(missing_pre),
     missing_forecast_periods = missing_post,

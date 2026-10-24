@@ -267,9 +267,7 @@ prediction_weights <- function(fit_days, fit_n, target_day) {
 
 build_design <- function(ps, window, target,
                          schedule = c("observed", "consecutive"),
-                         event_day = c("exclude", "include"),
-                         calibration = "estimand") {
-  calibration <- match.arg(calibration, "estimand")
+                         event_day = c("exclude", "include")) {
   schedule <- match.arg(schedule)
   event_day <- match.arg(event_day)
   days <- ps$relative_period
@@ -337,7 +335,7 @@ build_design <- function(ps, window, target,
     reference_rows = reference_rows, reference_map = reference_map,
     effect_rows = effect_rows, counterfactual_rows = counterfactual_rows,
     average_row = colMeans(effect_rows), final_fit = final_fit,
-    calibration = calibration,
+    calibration = "estimand",
     target = target, n_windows = length(fit_windows), windows = window_map
   )
 }

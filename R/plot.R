@@ -57,7 +57,7 @@ plot.eventsurvey <- function(x,
       } else {
         built <- build_design(
           x$daily, x$settings$window, target,
-          x$settings$schedule, x$settings$event_day, calibration_method(x$settings)
+          x$settings$schedule, x$settings$event_day
         )
         inner <- estimate_days(built, x$daily, alpha = 1 - inner_level)
       }

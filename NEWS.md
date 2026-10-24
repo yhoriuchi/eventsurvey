@@ -1,3 +1,12 @@
+# eventsurvey 0.4.1
+
+* Removes the `calibration` argument from `eventsurvey()` and
+  `eventsurvey_summary()`. Both interfaces always use estimand-specific
+  calibration. Remove any explicit `calibration` argument from existing calls.
+* Keeps estimates, standard errors, bias bounds, and confidence intervals
+  unchanged from version 0.4.0. Fitted objects retain calibration metadata.
+* Updates help pages, examples, application reports, and tests for the simpler API.
+
 # eventsurvey 0.4.0
 
 * Supports estimand-specific calibration only in both estimation interfaces.

@@ -20,16 +20,16 @@ event.
 
 ## Install the current version
 
-These examples use version 0.4.0, with daily calibration followed by
+These examples use version 0.4.1, with daily calibration followed by
 aggregation for period averages.
 
 ```{r installation, eval = FALSE}
 install.packages("remotes")
-remotes::install_github("yhoriuchi/eventsurvey", ref = "v0.4.0")
+remotes::install_github("yhoriuchi/eventsurvey", ref = "v0.4.1")
 packageVersion("eventsurvey")
 ```
 
-The installation is pinned to the `v0.4.0` release for reproducibility.
+The installation is pinned to the `v0.4.1` release for reproducibility.
 
 ## 1. Prepare respondent-level data
 
@@ -55,8 +55,8 @@ event effects are quantities to be estimated, not columns supplied to
 ## 2. Estimate the effect
 
 The formula contains the outcome and time variables. By default,
-`event_time = 0`, `event_day = "exclude"`, `window = 6`, and
-`calibration = "estimand"`: the model uses the
+`event_time = 0`, `event_day = "exclude"`, and `window = 6`.
+The model always uses estimand-specific calibration. It uses the
 final six observed pre-event periods, skips the event period, and forecasts
 the first six observed post-event periods. The rolling pre-event exercises
 fit six observed periods and match the actual elapsed forecast horizons of

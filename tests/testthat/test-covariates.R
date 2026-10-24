@@ -252,20 +252,18 @@ test_that("both covariance engines agree on sparse data", {
   dat <- covariate_test_data()
   dat <- dat[!dat$day %in% c(-9, -1, 2), ]
   ps <- eventsurvey:::period_stats(data.frame(day = dat$day, y = dat$y))
-  for (calibration in "estimand") {
-    for (event_day in c("exclude", "include")) {
-      target <- if (event_day == "exclude") c(1L, 3L, 4L, 5L) else c(0L, 1L, 3L, 4L)
-      built <- eventsurvey:::build_design(ps, 4, target,
-        event_day = event_day, calibration = calibration
-      )
-      influence <- eventsurvey:::estimate_covariates(dat[c("y", "day")], dat$day, built, ps, 0.05)
-      analytic <- eventsurvey(y ~ day, dat,
-        window = 4,
-        event_day = event_day, calibration = calibration
-      )
-      expect_equal(influence$estimate, analytic$estimate, tolerance = 1e-10)
-      expect_equal(influence$days, analytic$days, tolerance = 1e-10)
-      expect_equal(influence$average_components, analytic$average_components, tolerance = 1e-10)
-    }
+  for (event_day in c("exclude", "include")) {
+    target <- if (event_day == "exclude") c(1L, 3L, 4L, 5L) else c(0L, 1L, 3L, 4L)
+    built <- eventsurvey:::build_design(ps, 4, target,
+      event_day = event_day
+    )
+    influence <- eventsurvey:::estimate_covariates(dat[c("y", "day")], dat$day, built, ps, 0.05)
+    analytic <- eventsurvey(y ~ day, dat,
+      window = 4,
+      event_day = event_day
+    )
+    expect_equal(influence$estimate, analytic$estimate, tolerance = 1e-10)
+    expect_equal(influence$days, analytic$days, tolerance = 1e-10)
+    expect_equal(influence$average_components, analytic$average_components, tolerance = 1e-10)
   }
 })

@@ -23,7 +23,6 @@ fit_bateson <- eventsurvey_summary(
   event_time = 0,
   window = 7,
   event_day = "include",
-  calibration = "estimand",
   report_event_day = FALSE
 )
 
@@ -43,7 +42,6 @@ fit_privacy <- eventsurvey_summary(
   event_time = 0,
   window = 5,
   event_day = "include",
-  calibration = "estimand",
   report_event_day = FALSE,
   schedule = "observed"
 )
@@ -54,7 +52,6 @@ fit_procedural <- eventsurvey_summary(
   event_time = 0,
   window = 7,
   event_day = "include",
-  calibration = "estimand",
   report_event_day = FALSE,
   schedule = "observed"
 )

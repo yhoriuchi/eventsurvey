@@ -31,7 +31,7 @@ difference is the fieldwork schedule.
 
 ## Calibration and elapsed horizons
 
-Since version 0.3.0, `calibration = "estimand"` is the default. It matches the
+Estimand-specific calibration is applied automatically. It matches the
 actual elapsed forecast horizons of the final analysis and retains only
 complete pre-event reference windows. With missing periods, it may use fewer
 windows than the former observed-period algorithm, or stop when none match.
@@ -54,16 +54,14 @@ fit_complete <- eventsurvey(
   y ~ day,
   complete,
   event_time = 0,
-  window = 6,
-  calibration = "estimand"
+  window = 6
 )
 
 fit_sparse <- eventsurvey(
   y ~ day,
   sparse,
   event_time = 0,
-  window = 6,
-  calibration = "estimand"
+  window = 6
 )
 ```
 
