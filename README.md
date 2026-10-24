@@ -19,22 +19,16 @@ automatic diagnostics, figures, and a shareable HTML report.
 
 ## Installation
 
-Install the released **version 0.3.0** from its fixed GitHub tag:
+Install the current development version, which uses daily estimand-specific
+calibration followed by aggregation for period averages:
 
 ```r
 install.packages("remotes")
-remotes::install_github("yhoriuchi/eventsurvey@v0.3.0")
-```
-
-See the [0.3.0 release notes](https://github.com/yhoriuchi/eventsurvey/releases/tag/v0.3.0)
-for the new estimand-specific default and the retained pooled option.
-Using a version tag makes the selected package revision reproducible.
-
-To install the development version, including changes made after the release:
-
-```r
 remotes::install_github("yhoriuchi/eventsurvey", ref = "main")
 ```
+
+The latest tagged release predates this change. For reproducibility, record
+the installed commit as well as the package version.
 
 Check your installed package version with `packageVersion("eventsurvey")`.
 The release badge links to the [latest published release](https://github.com/yhoriuchi/eventsurvey/releases/latest);
@@ -63,25 +57,25 @@ eventsurvey_report(fit)
 The fitted object checks the data and design automatically, and the HTML report
 brings the main estimates, diagnostics, and figures together in one file.
 
-## Choose calibration
+## Calibration and a five-day average
 
-The default matches placebo calibration to the estimand: daily effects use
-errors at the same elapsed forecast horizon, and the window-average effect
-uses signed average errors within each placebo window. Each requires the
-corresponding population bias restriction; daily intervals are pointwise.
+Calibration matches each day's placebo errors to its elapsed forecast horizon.
+For a period average, the package calibrates each day first, then averages the
+estimates and bias bounds with equal day weights. It does not average signed
+prediction errors across days before calibration.
 
 ```r
-# Main method
-fit <- eventsurvey(y ~ day, sample_data, calibration = "estimand")
-# Comparison using the earlier calibration
-pooled <- eventsurvey(y ~ day, sample_data, calibration = "pooled")
+# Average effect over Days 1–5, excluding the event day
+fit <- eventsurvey(y ~ day, sample_data, window = 5, schedule = "consecutive")
+fit$estimate
+fit$days
 ```
 
-`"pooled"` reproduces the calibration used before version 0.3.0. The option
-also applies to `eventsurvey_summary()` and covariate-adjusted models.
-Inspect `fit$reference_average` and the daily bias bounds in `fit$days`.
-See [Methodology](articles/methodology.html) for the assumptions, inference,
-and matching requirements for sparse surveys.
+The average standard error includes covariance between daily estimates sharing
+the pre-event regression. The average honest interval aggregates daily intervals
+with a Bonferroni correction; displayed daily intervals remain pointwise.
+Inspect `fit$average_components` for the intervals used in aggregation.
+See [Methodology](articles/methodology.html) for assumptions and inference.
 
 ## Add pre-event covariates
 

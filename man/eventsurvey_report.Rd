@@ -41,7 +41,7 @@ diagnostics, settings, and figures.
 }
 \examples{
 if (requireNamespace("rmarkdown", quietly = TRUE) &&
-    rmarkdown::pandoc_available()) {
+  rmarkdown::pandoc_available()) {
   report_file <- eventsurvey(y ~ day, sample_data) |>
     eventsurvey_report(open = FALSE)
 }

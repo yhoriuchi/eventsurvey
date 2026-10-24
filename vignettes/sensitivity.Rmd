@@ -44,39 +44,6 @@ excluding the event period, restrictions motivated by known fieldwork breaks,
 and outcomes or subgroups chosen before inspecting results. Do not select the
 window that produces the smallest p-value or narrowest interval.
 
-## Compare calibration assumptions
-
-The default `calibration = "estimand"` matches references to daily and average
-targets. The earlier `"pooled"` option uses all individual errors. Keep the
-outcome, target periods, and model fixed when comparing these assumptions:
-
-```{r calibration-comparison}
-calibrations <- c("estimand", "pooled")
-calibration_fits <- lapply(calibrations, function(method) {
-  eventsurvey(y ~ day, dat, window = 6, calibration = method)
-})
-lapply(seq_along(calibration_fits), function(i) {
-  calibration_fits[[i]]$estimate |>
-    mutate(
-      method = if (i == 1L) "Main: estimand-specific" else "Comparison: pooled",
-      .before = 1
-    )
-}) |>
-  bind_rows() |>
-  select(method, effect, bias_bound, n_reference, conf_low, conf_high)
-```
-
-The default average bound uses the largest absolute signed window-average
-error; pooled calibration uses the largest absolute individual error.
-`n_reference` counts the contrasts used for the average interval. Daily
-results in each fit's `days` table use matching horizons under the default.
-
-With the same reference windows, estimand-specific intervals are contained
-in the pooled intervals, under tighter target-specific bias restrictions.
-Sparse schedules can produce different reference-window sets, so this nesting
-is not guaranteed. Choose the primary assumption before inspecting whether
-an interval excludes zero; see [Methodology](methodology.html).
-
 ## Also see
 
 - [Methodology and Assumptions](methodology.html) for how the window defines

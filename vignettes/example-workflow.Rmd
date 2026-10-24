@@ -61,9 +61,10 @@ head(fit$windows)
 `conventional_low` and `conventional_high` treat the linear extrapolation as
 correct. `conf_low` and `conf_high` are the main honest interval. They combine
 sampling uncertainty with the bounded misspecification assumption. The
-`bias_bound` is the largest absolute signed window-average reference error
-under the default estimand-specific calibration. With `calibration = "pooled"`,
-it is the largest absolute individual reference error.
+`bias_bound` is the mean of the daily matching-horizon bias bounds.
+The average honest interval aggregates daily intervals computed at significance
+level `alpha / window` (Bonferroni). Its components are in
+`fit$average_components`; ordinary daily results remain pointwise.
 
 ```{r counterfactual}
 plot(fit)
@@ -71,33 +72,6 @@ plot(fit)
 
 ```{r diagnostics}
 plot(fit, type = "diagnostics")
-```
-
-## Retain pooled calibration as a comparison
-
-Keep the model and target window unchanged. Estimand-specific calibration
-remains the main analysis; pooled calibration checks a different bias
-assumption.
-
-```{r pooled-comparison}
-fit_pooled <- eventsurvey(y ~ day, sample_data, calibration = "pooled")
-comparison <- rbind(
-  "Main: estimand-specific" = fit$estimate,
-  "Comparison: pooled" = fit_pooled$estimate
-)
-knitr::kable(
-  comparison[c("effect", "bias_bound", "conf_low", "conf_high")],
-  digits = 3
-)
-```
-
-Both methods can be included in one report with explicit labels:
-
-```{r, eval = FALSE}
-eventsurvey_report(list(
-  "Main: estimand-specific" = fit,
-  "Comparison: pooled" = fit_pooled
-))
 ```
 
 ## Minimum reporting checklist

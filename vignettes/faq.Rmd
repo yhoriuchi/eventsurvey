@@ -23,10 +23,10 @@ design and explicit assumptions, not the label attached to the event.
 
 </details>
 
-## Why not compare pooled means before and after?
+## Why not compare means before and after?
 
 <details>
-<summary>A pooled comparison assumes that the no-event outcome would have stayed constant.</summary>
+<summary>A simple before/after comparison assumes that the no-event outcome would have stayed constant.</summary>
 
 That comparison assumes the no-event outcome would have been constant. A
 linear extrapolation allows a short-run pre-existing trend and makes its
@@ -60,9 +60,7 @@ the final elapsed forecast horizons.
 The default fits successive observed survey periods and calibrates using
 complete pre-event windows that match the final elapsed forecast horizons.
 Actual time values enter the model, and gaps are not compressed or
-interpolated. It stops if no complete matching window exists. Pooled
-calibration retains the earlier construction from ordered observed periods,
-which can span different calendar horizons; see [Methodology](methodology.html).
+interpolated. It stops if no complete matching window exists.
 
 </details>
 
@@ -119,22 +117,17 @@ error.
 
 </details>
 
-## What changed in version 0.3.0?
+## How is a period-average effect calibrated?
 
 <details>
-<summary>Estimand-specific calibration is now the default; pooled calibration remains available.</summary>
+<summary>Calibrate each day separately, then aggregate with equal day weights.</summary>
 
-`calibration = "estimand"` uses matching-horizon errors for daily effects and
-signed within-window average errors for average effects. It includes sampling
-uncertainty in those errors and their covariance with the effect estimate.
-Use `calibration = "pooled"` to reproduce the earlier method, which used all
-individual reference errors for both targets. This works in both estimation
-interfaces and with covariate adjustment.
-
-Each method needs its corresponding population bias restriction. Smaller
-observed errors do not establish the restriction, and narrower intervals alone
-do not establish better coverage. Daily intervals remain pointwise. See
-[Methodology](methodology.html) and [Sensitivity Analysis](sensitivity.html).
+Matching-horizon errors calibrate each day's bias bound. The average effect
+and bias bound are the means of the corresponding daily quantities. Prediction
+errors are not averaged across days before calibration. The average standard
+error includes cross-day covariance from the shared pre-event fit. The average
+honest interval uses Bonferroni-adjusted daily intervals before aggregation;
+ordinary daily intervals remain pointwise. See [Methodology](methodology.html).
 
 </details>
 

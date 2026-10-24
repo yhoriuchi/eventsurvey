@@ -1,8 +1,10 @@
+# What this code is about: Regenerate public reports and estimate tables
+# using daily calibration and equal-day aggregation, keeping licensed inputs private.
 # Published-application HTML reports --------------------------------------
 #
 # Run from the package root. The Bateson--Weintraub report requires a local,
 # licensed source file identified by EVENTSURVEY_BATESON_DATA. The script
-# saves self-contained reports and an estimate-only comparison table; it never
+# saves self-contained reports and an estimate-only results table; it never
 # copies source records or period-level input data into the repository.
 
 # Initial settings --------------------------------------------------------
@@ -22,16 +24,6 @@ fit_bateson <- eventsurvey_summary(
   window = 7,
   event_day = "include",
   calibration = "estimand",
-  report_event_day = FALSE
-)
-
-fit_bateson_pooled <- eventsurvey_summary(
-  mean ~ day,
-  data = bateson,
-  event_time = 0,
-  window = 7,
-  event_day = "include",
-  calibration = "pooled",
   report_event_day = FALSE
 )
 
@@ -67,114 +59,51 @@ fit_procedural <- eventsurvey_summary(
   schedule = "observed"
 )
 
-fit_privacy_pooled <- eventsurvey_summary(
-  mean ~ day,
-  data = privacy,
-  event_time = 0,
-  window = 5,
-  event_day = "include",
-  calibration = "pooled",
-  report_event_day = FALSE,
-  schedule = "observed"
-)
-
-fit_procedural_pooled <- eventsurvey_summary(
-  mean ~ day,
-  data = procedural,
-  event_time = 0,
-  window = 7,
-  event_day = "include",
-  calibration = "pooled",
-  report_event_day = FALSE,
-  schedule = "observed"
-)
-
-# Verify calibration and unchanged targets -------------------------------
+# Verify daily calibration and aggregate targets -------------------------
 
 main_fits <- list(
   "Bateson: trust" = fit_bateson,
   "Epifanio: privacy rights" = fit_privacy,
   "Epifanio: procedural rights" = fit_procedural
 )
-pooled_fits <- list(fit_bateson_pooled, fit_privacy_pooled, fit_procedural_pooled)
-
-for (i in seq_along(main_fits)) {
-  main <- main_fits[[i]]
-  comparison <- pooled_fits[[i]]
-  average_errors <- tapply(main$reference$error, main$reference$fit_start, mean)
+for (fit in main_fits) {
   stopifnot(
-    main$settings$calibration == "estimand",
-    comparison$settings$calibration == "pooled",
-    identical(main$fitted$relative_period, comparison$fitted$relative_period),
-    isTRUE(all.equal(main$estimate$effect, comparison$estimate$effect)),
-    isTRUE(all.equal(main$days$effect, comparison$days$effect)),
-    isTRUE(all.equal(main$estimate$bias_bound, max(abs(average_errors)))),
+    fit$settings$calibration == "estimand",
+    isTRUE(all.equal(fit$estimate$effect, mean(fit$average_components$effect))),
+    isTRUE(all.equal(fit$estimate$bias_bound, mean(fit$average_components$bias_bound))),
     isTRUE(all.equal(
-      comparison$estimate$bias_bound, max(abs(comparison$reference$error))
+      fit$estimate$std_error^2,
+      sum(fit$inference$day_covariance) / nrow(fit$fitted)^2
     )),
-    all(is.finite(c(
-      main$estimate$conf_low, main$estimate$conf_high,
-      main$days$conf_low, main$days$conf_high
-    ))),
-    all(main$days$conf_low <= main$days$conf_high)
+    all(is.finite(c(fit$estimate$conf_low, fit$estimate$conf_high)))
   )
-  for (j in seq_len(nrow(main$days))) {
-    matching <- main$reference$horizon == main$days$horizon[j]
-    stopifnot(isTRUE(all.equal(
-      main$days$bias_bound[j], max(abs(main$reference$error[matching]))
-    )))
-  }
 }
 
-# Save estimates only for the website comparison -------------------------
+# Save estimates only for the website ------------------------------------
+results <- do.call(rbind, lapply(seq_along(main_fits), function(i) {
+  fit <- main_fits[[i]]
+  data.frame(
+    outcome = names(main_fits)[i],
+    target_periods = paste(fit$fitted$relative_period, collapse = ", "),
+    effect = fit$estimate$effect, std_error = fit$estimate$std_error,
+    bias_bound = fit$estimate$bias_bound,
+    conf_low = fit$estimate$conf_low, conf_high = fit$estimate$conf_high,
+    n_windows = fit$estimate$n_windows
+  )
+}))
+write.csv(results, file.path("vignettes", "figures", "application-calibration.csv"), row.names = FALSE)
+print(results, row.names = FALSE)
 
-comparison_rows <- lapply(seq_along(main_fits), function(i) {
-  pair <- list(main_fits[[i]], pooled_fits[[i]])
-  do.call(rbind, lapply(seq_along(pair), function(j) {
-    fit <- pair[[j]]
-    data.frame(
-      outcome = names(main_fits)[i],
-      calibration = fit$settings$calibration,
-      role = if (j == 1L) "Main" else "Comparison",
-      target_periods = paste(fit$fitted$relative_period, collapse = ", "),
-      effect = fit$estimate$effect,
-      bias_bound = fit$estimate$bias_bound,
-      conf_low = fit$estimate$conf_low,
-      conf_high = fit$estimate$conf_high,
-      n_windows = fit$estimate$n_windows
-    )
-  }))
-})
-comparison_table <- do.call(rbind, comparison_rows)
-write.csv(
-  comparison_table,
-  file.path("vignettes", "figures", "application-calibration.csv"),
-  row.names = FALSE
-)
-print(comparison_table, row.names = FALSE)
-
-# Render main analyses first, then explicitly labeled comparisons --------
-
+# Render application reports --------------------------------------------
 eventsurvey_report(
-  list(
-    "Main: estimand-specific calibration" = fit_bateson,
-    "Comparison: pooled calibration" = fit_bateson_pooled
-  ),
+  fit_bateson,
   file = file.path(report_dir, "bateson-weintraub.html"),
-  open = FALSE,
-  overwrite = TRUE,
-  title = "Bateson and Weintraub (2022): main analysis and pooled comparison"
+  open = FALSE, overwrite = TRUE,
+  title = "Bateson and Weintraub (2022)"
 )
-
 eventsurvey_report(
-  list(
-    "Main: privacy rights, estimand-specific calibration" = fit_privacy,
-    "Main: procedural rights, estimand-specific calibration" = fit_procedural,
-    "Comparison: privacy rights, pooled calibration" = fit_privacy_pooled,
-    "Comparison: procedural rights, pooled calibration" = fit_procedural_pooled
-  ),
+  list("Privacy rights" = fit_privacy, "Procedural rights" = fit_procedural),
   file = file.path(report_dir, "epifanio-giani-ivandic.html"),
-  open = FALSE,
-  overwrite = TRUE,
-  title = "Epifanio, Giani, and Ivandic (2023): main analyses and pooled comparisons"
+  open = FALSE, overwrite = TRUE,
+  title = "Epifanio, Giani, and Ivandic (2023)"
 )

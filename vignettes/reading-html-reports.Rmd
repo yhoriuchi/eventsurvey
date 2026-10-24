@@ -16,8 +16,7 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 and reproducibility information for an analysis in one self-contained HTML
 file. It does not change or re-estimate the fitted model. The examples use
 estimand-specific calibration as the main method. The published-application
-reports place these main analyses first and label the later pooled sections
-as comparisons.
+reports use daily estimand-specific calibration followed by aggregation.
 
 ```{r, eval = FALSE}
 fit <- eventsurvey(y ~ day, survey_data)
@@ -59,11 +58,12 @@ The table distinguishes two intervals:
   uncertainty in the selected reference errors, including covariance with the
   effect estimate. This is the package's primary interval.
 
-The **bias bound** is the largest absolute signed window-average reference
-error under estimand-specific calibration, or the largest absolute individual
-reference error under pooled calibration. The report identifies which method
-was used. The counts of **reference windows** and **average-calibration references** show how much
-pre-event evidence was available to calibrate that bound.
+The **bias bound** is the mean of daily matching-horizon bias bounds.
+The average honest interval aggregates daily intervals computed with a
+Bonferroni correction; the report shows these in **Average components**.
+The conventional average standard error includes cross-day covariance.
+The counts of **reference windows** and **Daily reference contrasts** describe
+the pre-event evidence used across all target days.
 
 ## Automatic diagnostics
 
@@ -106,8 +106,8 @@ does not imply that the effect is constant over time.
 
 The package repeatedly fits the same model in earlier pre-event windows.
 Under estimand-specific calibration it forecasts the same elapsed horizons
-as the final analysis, retaining complete matching windows. Pooled comparison
-analyses use the earlier observed-period rolling construction. The resulting errors measure how far
+as the final analysis, retaining complete matching windows. The resulting
+errors measure how far
 the linear extrapolation missed when no focal event had yet occurred. Large or
 systematic errors indicate that the counterfactual trend is difficult to
 forecast and widen the honest interval. The blue dashed vertical line and its

@@ -1,3 +1,8 @@
+# What this code is about: Fit adjusted forecasts and propagate respondent
+# influence functions through daily calibration and final aggregation. Direct
+# matrix/S3 access exposes covariance algebra without adding dependencies.
+
+# Covariate design and influence functions -------------------------------
 # Covariate-adjusted OLS and period-stratified influence functions.
 
 covariate_design <- function(mf, day, built) {
@@ -105,11 +110,10 @@ covariate_interval <- function(point, variance, reference, reference_variance,
   )
 }
 
-covariate_days <- function(fitted, inference, reference, alpha,
-                           calibration = "pooled") {
+covariate_days <- function(fitted, inference, reference, alpha) {
   horizons <- inference$target_horizons
   indices <- lapply(seq_len(nrow(fitted)), function(j) {
-    daily_reference_indices(reference, horizons[j], calibration)
+    daily_reference_indices(reference, horizons[j])
   })
   intervals <- t(vapply(seq_len(nrow(fitted)), function(j) {
     i <- indices[[j]]
@@ -121,6 +125,7 @@ covariate_days <- function(fitted, inference, reference, alpha,
   }, numeric(2)))
   data.frame(fitted,
     effect = fitted$observed - fitted$counterfactual,
+    std_error = sqrt(pmax(0, diag(inference$day_covariance))),
     conf_low = intervals[, 1L], conf_high = intervals[, 2L],
     horizon = if (is.null(horizons)) rep(NA_real_, nrow(fitted)) else horizons,
     bias_bound = vapply(indices, function(i) max(abs(reference$error[i])), numeric(1)),
@@ -134,8 +139,6 @@ estimate_covariates <- function(mf, day, built, ps, alpha) {
   reference_variance <- numeric(nrow(built$reference_map))
   reference_day_covariance <- matrix(0, nrow(built$reference_map), length(built$target))
   reference_errors <- numeric(nrow(built$reference_map))
-  average_reference_errors <- average_reference_variance <- numeric(nrow(built$windows))
-  average_reference_day_covariance <- matrix(0, nrow(built$windows), length(built$target))
   rolling_rmse <- numeric(nrow(built$windows))
   for (j in seq_len(nrow(built$windows))) {
     win <- built$windows[j, ]
@@ -151,39 +154,13 @@ estimate_covariates <- function(mf, day, built, ps, alpha) {
     reference_variance[indices] <- rowSums(fit$influence^2)
     reference_day_covariance[indices, ] <- tcrossprod(fit$influence, final$influence)
     reference_errors[indices] <- fit$errors
-    # Average the signed errors and influence vectors BEFORE taking squares.
-    # Shared regression estimates induce covariance between forecast horizons.
-    average_influence <- colMeans(fit$influence)
-    average_reference_errors[j] <- mean(fit$errors)
-    average_reference_variance[j] <- sum(average_influence^2)
-    average_reference_day_covariance[j, ] <- as.numeric(final$influence %*% average_influence)
     rolling_rmse[j] <- fit$fit_rmse
   }
   inference <- list(
     day_covariance = tcrossprod(final$influence),
     reference_variance = reference_variance,
     reference_day_covariance = reference_day_covariance,
-    average_reference_variance = average_reference_variance,
-    average_reference_day_covariance = average_reference_day_covariance,
     target_horizons = built$target - max(built$final_fit)
-  )
-  effect <- mean(final$errors)
-  variance <- sum(colMeans(final$influence)^2)
-  se <- sqrt(variance)
-  estimand <- calibration_method(built) == "estimand"
-  calibration_errors <- if (estimand) average_reference_errors else reference_errors
-  ci <- covariate_interval(
-    effect, variance, calibration_errors,
-    if (estimand) average_reference_variance else reference_variance,
-    if (estimand) rowMeans(average_reference_day_covariance) else rowMeans(reference_day_covariance), alpha
-  )
-  z <- stats::qnorm(1 - alpha / 2)
-  estimate <- data.frame(
-    effect = effect, std_error = se,
-    conventional_low = effect - z * se, conventional_high = effect + z * se,
-    bias_bound = max(abs(calibration_errors)), conf_low = unname(ci[1L]),
-    conf_high = unname(ci[2L]), n_windows = built$n_windows,
-    n_reference = length(calibration_errors)
   )
   reference <- cbind(built$reference_map, error = reference_errors)
   fitted <- data.frame(
@@ -191,6 +168,9 @@ estimate_covariates <- function(mf, day, built, ps, alpha) {
     observed = ps$mean[match(built$target, ps$relative_period)],
     counterfactual = final$predictions
   )
+  days <- covariate_days(fitted, inference, reference, alpha)
+  components <- covariate_days(fitted, inference, reference, alpha / length(built$target))
+  estimate <- average_daily_results(days, inference$day_covariance, components, built$n_windows, alpha)
   line_days <- sort(c(built$final_fit, built$target))
   line <- data.frame(
     relative_period = line_days,
@@ -198,11 +178,7 @@ estimate_covariates <- function(mf, day, built, ps, alpha) {
   )
   list(
     estimate = estimate, reference = reference, fitted = fitted,
-    reference_average = data.frame(
-      fit_start = built$windows$fit_start, error = average_reference_errors,
-      std_error = sqrt(average_reference_variance)
-    ),
-    days = covariate_days(fitted, inference, reference, alpha, calibration_method(built)),
+    average_components = components, days = days,
     inference = inference, counterfactual_path = line,
     model_diagnostics = list(
       parameters = final$parameters,

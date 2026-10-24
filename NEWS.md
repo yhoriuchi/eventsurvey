@@ -1,26 +1,26 @@
+# eventsurvey 0.3.0.9000
+
+* Supports estimand-specific calibration only in both estimation interfaces.
+* Calibrates each daily effect using matching elapsed forecast horizons, then
+  aggregates daily effects and bias bounds with equal period weights.
+  Signed forecast errors are no longer averaged across days for calibration.
+* Constructs conservative average honest intervals by averaging daily endpoints
+  computed at significance level `alpha / window` (Bonferroni). Displayed daily
+  intervals remain pointwise. Average sampling standard errors retain the full
+  cross-day covariance induced by the shared pre-event regression.
+* Exposes daily `std_error`, `average_components` (all target days and the
+  intervals used for aggregation), and `inference$day_covariance` in both
+  interfaces. Removes `reference_average`; `estimate$n_reference` now counts
+  all daily reference contrasts contributing to aggregation.
+* Updates website examples, generated reports, and calibration verification.
+
 # eventsurvey 0.3.0
 
-* Changes the default to `calibration = "estimand"` in both estimation
-  interfaces. Daily effects use matching elapsed forecast horizons; the
-  window-average effect uses signed average errors within placebo windows.
-  Use `calibration = "pooled"` to reproduce the previous calibration and
-  rolling-window construction. Point estimates are unchanged.
-* Uses common complete reference windows with the final elapsed forecast
-  horizons, including on sparse schedules. Insufficient matching history
-  produces an informative error; there is no automatic pooled fallback.
-* Propagates reference-average sampling uncertainty and covariance with the
-  effect estimate, including shared fits and forecast covariate means.
-  Daily intervals remain pointwise. Validity requires the corresponding
-  population bias restriction and sampling assumptions.
-* Exposes signed window-average references and their standard errors in
-  `reference_average`; daily results include horizon, estimated bias bound,
-  and reference count. Console output and HTML reports identify calibration.
-* Adds an inference derivation, independent covariance and compatibility
-  tests, and a reproducible simulation/stratified-bootstrap validation script.
-
-* Regenerates published-application reports and figures with estimand-specific
-  calibration as the main method and explicitly labeled pooled comparisons.
-  Tutorials, including sparse schedules, follow the same convention.
+* Introduced matching-horizon calibration and common complete reference
+  windows, including for sparse schedules, with reference-error uncertainty.
+  Its period-average calculation has been superseded by the daily-first
+  aggregation described above.
+* Added an inference derivation, covariance tests, and calibration validation.
 
 # eventsurvey 0.2.0
 

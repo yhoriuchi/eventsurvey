@@ -35,18 +35,16 @@ explicit and empirically examines comparable pre-event forecasts.
 
 ## Estimand-specific calibration
 
-Version 0.3.0 defaults to `calibration = "estimand"`. Set
-`calibration = "pooled"` to reproduce the previous procedure. Both options
-apply to respondent data, summary data, and covariate-adjusted models.
-Changing calibration changes the identifying restriction, not the estimated
-post-event effects or their conventional sampling standard errors.
+The package supports estimand-specific calibration for respondent data,
+summary data, and covariate-adjusted models. Calibration is performed for each
+daily effect; period averages are formed only after that step.
 
 For estimand-specific calibration, every candidate fitting window contains
 `s` successive observed pre-event periods. Let the final fitting period be
 `f` and the target dates be `t[1], ..., t[s]`. Translate the elapsed offsets
 `t - f` to the end of each candidate fit. Retain the window only if **all**
 translated forecast dates are observed before the event. Use these common
-complete windows for both daily and average calibration; additional origins
+complete windows for all daily calibrations; additional origins
 that could forecast only earlier days are not used in this release. Window
 selection depends on dates, not outcome values.
 
@@ -58,16 +56,10 @@ On sparse schedules the actual offsets are matched, rather than treating the
 first, second, and later observed forecast periods as equal calendar horizons.
 Fitting spans and respondent composition can still differ across windows;
 the bias restriction must be credible for those differences. If no complete
-matching window exists, estimation stops with an explanation. It never
-silently falls back to pooled calibration.
-
-Pooled calibration retains the earlier observed-period rolling windows:
-fit `s` observed periods, skip one observed period if Day 0 is excluded, and
-forecast the next `s` observed periods. Its elapsed horizons can differ on
-sparse surveys. `schedule = "consecutive"` requires uninterrupted calendar
-periods for either calibration. The existing minimum of `2s + 1` observed
-pre-event periods (`2s` when Day 0 is included) remains an interface requirement; sparse surveys
-may require more history to supply a complete matching window.
+matching window exists, estimation stops with an explanation.
+`schedule = "consecutive"` requires uninterrupted calendar periods. The
+minimum of `2s + 1` observed pre-event periods (`2s` when Day 0 is included)
+remains an interface requirement; sparse surveys may need more history.
 
 Let $b_{jh}$ be the population signed forecast error at elapsed horizon $h$
 in placebo window $j$, and $b_h^{post}$ the corresponding population error
@@ -78,40 +70,52 @@ $$
 |b_h^{post}| \leq \max_j |b_{jh}|.
 $$
 
-For the equal-period-weighted average over the specified target dates, the
-restriction is instead
+For an average over $D$ specified post-event days, define
 
 $$
-\left|\frac{1}{s}\sum_h b_h^{post}\right|
-\leq \max_j\left|\frac{1}{s}\sum_h b_{jh}\right|.
+\bar\tau_D=\frac{1}{D}\sum_{d=1}^D E[Y_i(1,d)-Y_i(0,d)],\qquad
+\widehat{\bar\tau}_D=\frac{1}{D}\sum_{d=1}^D\widehat\tau_d.
 $$
 
-Average the **signed errors within each window**, then take the largest
-absolute average. This is neither the average of absolute errors nor an
-average across placebo windows. Cancellation matters because the estimand
-itself is an average. Neither the daily restrictions nor their conjunction
-imply the average restriction: signs can cancel in reference windows but
-align after the event. Each reported target needs its own restriction.
+Calibrate each day first. The resulting bound on average population bias is
 
-Pooled calibration uses $\max_{j,h}|b_{jh}|$ for every target. With the same
-reference windows, estimand-specific restrictions have smaller or equal
-right-hand sides and are not implied by the corresponding pooled restriction.
-The population restrictions are assumptions; small observed errors do not
-verify them. Specify the target dates, calibration, and model without choosing
-among them to obtain a significant post-event result.
+$$
+|\bar b^{post}|\leq\frac{1}{D}\sum_{d=1}^D B_d,\qquad
+B_d=\max_j|b_{j,h_d}|.
+$$
 
-`reference` retains individual errors and elapsed horizons for diagnostics.
-`reference_average` gives signed window averages and their standard errors.
-`estimate$bias_bound` and `estimate$n_reference` describe the references
-actually used for the average interval. The daily table gives each target's
-`horizon`, estimated `bias_bound`, and `n_reference`.
+Its sample counterpart is `estimate$bias_bound = mean(daily_bias_bounds)`.
+**Do not average signed prediction errors across days before calibration.**
+Each daily restriction must hold; a bound on average bias alone is insufficient
+for this procedure. Small observed errors do not establish these assumptions.
+Choose target dates and models without selecting for a significant result.
+
+For example, to estimate the mean effect over Days 1–5:
+
+```{r five-day-method}
+library(eventsurvey)
+fit_five <- eventsurvey(y ~ day, sample_data,
+  window = 5,
+  event_day = "exclude", schedule = "consecutive"
+)
+fit_five$estimate
+```
+
+This fits Days -5 through -1 and targets Days 1 through 5. On a sparse survey,
+`window = 5` with the default observed schedule means the first five observed
+periods, which need not be the first five calendar days.
+
+`reference` retains individual errors and elapsed horizons. `days` includes
+sampling standard errors, bias bounds, and counts of matching references.
+`average_components` contains all target days and the more conservative daily
+intervals used for aggregation, including an included but hidden event day.
+`estimate$n_reference` counts the daily reference contrasts across all targets.
 
 ## Honest inference and why the construction still applies
 
 For any one scalar target $\theta$, let the effect estimator have population
 limit $\eta=\theta+b$. Let $\delta_j$ denote its selected population reference
-contrasts: matching-horizon errors for a daily target, within-window averages
-for the average target, or individual errors for pooled calibration. Assume
+contrasts: matching-horizon errors for that daily target. Assume
 
 $$
 |b|\leq B,\qquad B=\max_j|\delta_j|.
@@ -160,40 +164,55 @@ requires those regularity conditions uniformly over the specified model class.
 Arbitrary serially correlated period shocks are not covered by the current
 independent-respondent covariance estimator.
 
-Daily coverage is pointwise. These intervals are not a simultaneous band, and
-the average interval is computed directly rather than by averaging daily
-interval endpoints. A maximum absolute reference error plus a conventional
-half-width is not the implemented inference procedure.
+The ordinary daily intervals use significance level $\alpha$ and have
+pointwise coverage. They are not a simultaneous band.
 
-With common reference windows and equal nonnegative averaging weights,
-estimand-specific daily intervals are contained in pooled intervals because
-they use a subset of the candidates. The same containment holds for the
-average interval: its adjusted estimate is an average of candidate adjusted
-estimates, and the standard deviation of that average is at most the average
-of their standard deviations (the triangle inequality). On sparse schedules,
-reference-window sets can differ between the two methods, so containment is
-not guaranteed. Neither bias bounds nor interval widths must increase
-monotonically with horizon.
+For the average honest interval, recompute each daily interval $[L_d,U_d]$
+at significance level $\alpha/D$. By Bonferroni, all $D$ intervals jointly
+cover their daily effects with probability at least $1-\alpha$ asymptotically.
+Therefore the interval
+
+$$
+\left[\frac{1}{D}\sum_d L_d,\;\frac{1}{D}\sum_d U_d\right]
+$$
+
+covers the equal-day average with at least that probability. This is a
+conservative construction that permits dependence between daily estimators.
+The package does **not** average ordinary pointwise 95% endpoints and label
+that a 95% average interval. With five days and `alpha = 0.05`, the component
+intervals use 99% coverage. This adjustment is across target days; the daily
+union--intersection envelope needs no additional adjustment across references.
 
 ## Sampling covariance
 
-The implementation is analytic for a time-only linear model. Individual-level
-OLS is equivalent to weighted least squares on period means with period sample
-sizes as weights. Each effect and reference error is a linear combination of
-independent period means. For the average target, first average the reference
-coefficient rows within a window and then calculate variances and covariances.
-This includes covariance between horizons sharing a fitted trend and overlap
-with the final fitting window.
+The average estimator's sampling variance is
 
-With additive covariates, every window fits respondent-level OLS. Forecasts
-average predictions over respondents in each forecast period. Influence
-contributions include coefficient-estimation uncertainty and the forecast
-period's outcome and covariate means. Contributions are centered within period,
-conditional on period counts, with the correction `n / (n - 1)`.
-For average calibration, average the signed errors and the respondent
-influence vectors within each reference window **before** computing their
-cross-products. Averaging standard errors, or adding variances as if horizons
-were independent, gives the wrong uncertainty.
+$$
+\widehat{\operatorname{Var}}(\widehat{\bar\tau}_D)
+=\frac{1}{D^2}\left\{\sum_d\widehat{\operatorname{Var}}(\widehat\tau_d)
++2\sum_{d<e}\widehat{\operatorname{Cov}}(\widehat\tau_d,\widehat\tau_e)\right\}.
+$$
+
+The standard error is its square root. It reduces to the sum of daily
+variances divided by $D^2$ only when cross-day covariances are zero. Different
+post-event respondents do not imply independent effect estimates: every day
+uses the same estimated pre-event trend. The package retains this covariance
+in `inference$day_covariance`, ordered as `fitted$relative_period`.
+This standard error produces the conventional interval; the honest interval
+uses the daily calibration and aggregation described above.
+
+For a time-only linear model, respondent-level OLS is equivalent to weighted
+least squares on period means with sample sizes as weights. Daily effects and
+reference errors are linear combinations of independent period means. Their
+coefficient rows determine the covariance matrix, including overlap between
+rolling windows and the final fitting window.
+
+With additive covariates, each window fits respondent-level OLS and predictions
+are averaged over respondents in each forecast period. Influence contributions
+include coefficient uncertainty and the forecast period's outcome and covariate
+means. Scores are centered within period, conditional on counts, with the
+correction `n / (n - 1)`. Their cross-products give daily and reference
+covariances; no average-reference error is constructed for calibration.
 
 Cross-products retain dependencies from shared respondents across fits and
 forecasts. This assumes independent respondents within and across periods;

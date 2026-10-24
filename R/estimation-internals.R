@@ -1,3 +1,8 @@
+# What this code is about: Build forecast contrasts, calibrate each day, and
+# aggregate effects with their sampling covariance. Matrix indexing and direct
+# internal-list access keep the linear algebra explicit without new imports.
+
+# Validation and period summaries ----------------------------------------
 validate_scalar <- function(x, name, lower = -Inf, upper = Inf,
                             integer = FALSE, open = FALSE) {
   ok <- is.numeric(x) && length(x) == 1L && is.finite(x)
@@ -263,8 +268,8 @@ prediction_weights <- function(fit_days, fit_n, target_day) {
 build_design <- function(ps, window, target,
                          schedule = c("observed", "consecutive"),
                          event_day = c("exclude", "include"),
-                         calibration = c("estimand", "pooled")) {
-  calibration <- match.arg(calibration)
+                         calibration = "estimand") {
+  calibration <- match.arg(calibration, "estimand")
   schedule <- match.arg(schedule)
   event_day <- match.arg(event_day)
   days <- ps$relative_period
@@ -276,36 +281,19 @@ build_design <- function(ps, window, target,
   rows <- list()
   map <- list()
   k <- 0L
-  if (calibration == "estimand") {
-    # Translate the final elapsed forecast horizons to each rolling fit.
-    # Use common complete windows, chosen without inspecting outcomes.
-    starts <- seq_len(length(pre) - window + 1L)
-    fit_windows <- lapply(starts, function(j) pre[j:(j + window - 1L)])
-    offsets <- target - max(final_fit)
-    forecast_windows <- lapply(fit_windows, function(fit) max(fit) + offsets)
-    complete <- vapply(forecast_windows, function(x) all(x %in% pre), logical(1))
-    fit_windows <- fit_windows[complete]
-    forecast_windows <- forecast_windows[complete]
-    if (!length(fit_windows)) {
-      stop("No complete pre-event reference windows match the elapsed forecast horizons for estimand-specific calibration. Supply more history or reconsider the analysis window; `calibration = \"pooled\"` uses a different bias assumption.",
-        call. = FALSE
-      )
-    }
-  } else if (schedule == "consecutive") {
-    forecast_offsets <- target - max(final_fit)
-    last_start <- -window - max(forecast_offsets)
-    starts <- seq.int(min(pre), last_start)
-    fit_windows <- lapply(starts, function(start) seq.int(start, length.out = window))
-    forecast_windows <- lapply(fit_windows, function(fit) max(fit) + forecast_offsets)
-  } else {
-    skipped_observed_periods <- as.integer(event_day == "exclude")
-    n_windows <- length(pre) - 2L * window - skipped_observed_periods + 1L
-    starts <- seq_len(n_windows)
-    fit_windows <- lapply(starts, function(j) pre[j:(j + window - 1L)])
-    forecast_windows <- lapply(starts, function(j) {
-      first <- j + window + skipped_observed_periods
-      pre[first:(first + window - 1L)]
-    })
+  # Translate the final elapsed forecast horizons to each rolling fit.
+  # Use common complete windows, chosen without inspecting outcomes.
+  starts <- seq_len(length(pre) - window + 1L)
+  fit_windows <- lapply(starts, function(j) pre[j:(j + window - 1L)])
+  offsets <- target - max(final_fit)
+  forecast_windows <- lapply(fit_windows, function(fit) max(fit) + offsets)
+  complete <- vapply(forecast_windows, function(x) all(x %in% pre), logical(1))
+  fit_windows <- fit_windows[complete]
+  forecast_windows <- forecast_windows[complete]
+  if (!length(fit_windows)) {
+    stop("No complete pre-event reference windows match the elapsed forecast horizons for estimand-specific calibration. Supply more history or reconsider the analysis window.",
+      call. = FALSE
+    )
   }
   window_map <- data.frame(
     fit_start = vapply(fit_windows, min, integer(1)),
@@ -355,24 +343,30 @@ build_design <- function(ps, window, target,
 }
 
 calibration_method <- function(settings) {
-  # Objects saved before this option was introduced used pooled calibration.
-  if (is.null(settings$calibration)) "pooled" else settings$calibration
+  if (!identical(settings$calibration, "estimand")) {
+    stop("This saved fit uses an unsupported calibration. Refit with the current package.", call. = FALSE)
+  }
+  "estimand"
 }
 
-reference_groups <- function(built) {
-  lapply(built$windows$fit_start, function(start) {
-    which(built$reference_map$fit_start == start)
-  })
+daily_reference_indices <- function(reference, horizon) {
+  which(reference$horizon == horizon)
 }
 
-average_reference_rows <- function(built) {
-  t(vapply(reference_groups(built), function(i) {
-    colMeans(built$reference_rows[i, , drop = FALSE])
-  }, numeric(ncol(built$reference_rows))))
-}
-
-daily_reference_indices <- function(reference, horizon, calibration) {
-  if (calibration == "pooled") seq_len(nrow(reference)) else which(reference$horizon == horizon)
+# Aggregate only after each day has been calibrated. Components use alpha / D
+# so their joint coverage is at least 1 - alpha by the union bound.
+average_daily_results <- function(days, covariance, components, n_windows, alpha) {
+  d <- nrow(days)
+  effect <- mean(days$effect)
+  se <- sqrt(max(0, sum(covariance) / d^2))
+  z <- stats::qnorm(1 - alpha / 2)
+  data.frame(
+    effect = effect, std_error = se,
+    conventional_low = effect - z * se, conventional_high = effect + z * se,
+    bias_bound = mean(days$bias_bound),
+    conf_low = mean(components$conf_low), conf_high = mean(components$conf_high),
+    n_windows = n_windows, n_reference = sum(days$n_reference)
+  )
 }
 
 honest_interval <- function(point_row, point, reference_rows, reference_errors,
@@ -396,31 +390,10 @@ estimate_design <- function(built, ps, alpha) {
   ybar <- ps$mean
   variance <- ps$mean_variance
   reference_errors <- as.numeric(built$reference_rows %*% ybar)
-  average_rows <- average_reference_rows(built)
-  reference_average <- data.frame(
-    fit_start = built$windows$fit_start,
-    error = as.numeric(average_rows %*% ybar),
-    std_error = sqrt(as.numeric(average_rows^2 %*% variance))
-  )
-  calibration_rows <- if (calibration_method(built) == "estimand") average_rows else built$reference_rows
-  calibration_errors <- as.numeric(calibration_rows %*% ybar)
-  effect <- sum(built$average_row * ybar)
-  se <- sqrt(sum(built$average_row^2 * variance))
-  z <- stats::qnorm(1 - alpha / 2)
-  ci <- honest_interval(
-    built$average_row, effect, calibration_rows,
-    calibration_errors, variance, alpha
-  )
-  estimate <- data.frame(
-    effect = effect,
-    std_error = se,
-    conventional_low = effect - z * se,
-    conventional_high = effect + z * se,
-    bias_bound = max(abs(calibration_errors)),
-    conf_low = unname(ci[1L]), conf_high = unname(ci[2L]),
-    n_windows = built$n_windows,
-    n_reference = length(calibration_errors)
-  )
+  days <- estimate_days(built, ps, alpha)
+  components <- estimate_days(built, ps, alpha / length(built$target))
+  covariance <- tcrossprod(sweep(built$effect_rows, 2, sqrt(variance), "*"))
+  estimate <- average_daily_results(days, covariance, components, built$n_windows, alpha)
   reference <- cbind(built$reference_map, error = reference_errors)
   fitted <- data.frame(
     relative_period = built$target,
@@ -429,7 +402,8 @@ estimate_design <- function(built, ps, alpha) {
   )
   list(
     estimate = estimate, reference = reference,
-    reference_average = reference_average, fitted = fitted
+    average_components = components, fitted = fitted, days = days,
+    inference = list(day_covariance = covariance)
   )
 }
 
@@ -440,7 +414,7 @@ estimate_days <- function(built, ps, alpha) {
   effects <- as.numeric(built$effect_rows %*% ybar)
   horizons <- built$target - max(built$final_fit)
   indices <- lapply(horizons, function(h) {
-    daily_reference_indices(built$reference_map, h, calibration_method(built))
+    daily_reference_indices(built$reference_map, h)
   })
   intervals <- t(vapply(seq_along(effects), function(j) {
     i <- indices[[j]]
@@ -453,7 +427,8 @@ estimate_days <- function(built, ps, alpha) {
     relative_period = built$target,
     observed = ybar[match(built$target, ps$relative_period)],
     counterfactual = as.numeric(built$counterfactual_rows %*% ybar),
-    effect = effects, conf_low = intervals[, 1L], conf_high = intervals[, 2L],
+    effect = effects,
+    std_error = sqrt(as.numeric(built$effect_rows^2 %*% variance)), conf_low = intervals[, 1L], conf_high = intervals[, 2L],
     horizon = horizons,
     bias_bound = vapply(indices, function(i) max(abs(reference_errors[i])), numeric(1)),
     n_reference = lengths(indices)

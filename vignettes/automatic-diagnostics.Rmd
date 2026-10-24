@@ -28,9 +28,6 @@ does not change the estimate. It asks the analyst to confirm that the data and
 design are appropriate for the application.
 
 All estimation examples below use the default estimand-specific calibration.
-For a clearly labeled pooled comparison with the same model and target
-periods, see [Sensitivity Analysis](sensitivity.html).
-
 ## The five checks
 
 | Check | `Review` is shown when | Suggested response |

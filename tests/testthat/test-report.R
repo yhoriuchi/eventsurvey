@@ -1,3 +1,7 @@
+# What this code is about: Verify the package API and inference numerically.
+# Direct component/matrix access is intentional when testing the object contract.
+
+# Regression checks ------------------------------------------------------
 test_that("eventsurvey_report validates its inputs", {
   expect_error(
     eventsurvey_report(data.frame()),
@@ -32,7 +36,7 @@ test_that("eventsurvey_report creates a self-contained HTML report", {
   expect_match(html, "Event Survey Report", fixed = TRUE)
   expect_match(html, "Main result", fixed = TRUE)
   expect_match(html, "Estimand-specific calibration", fixed = TRUE)
-  expect_match(html, "Signed window-average reference errors", fixed = TRUE)
+  expect_match(html, "Average components", fixed = TRUE)
   expect_match(html, "Automatic diagnostics", fixed = TRUE)
   expect_match(html, "Forecast diagnostics", fixed = TRUE)
   expect_match(html, "Interpretation limits", fixed = TRUE)
@@ -57,7 +61,7 @@ test_that("eventsurvey_report creates a self-contained HTML report", {
     n = vapply(split_y, length, integer(1)),
     variance = vapply(split_y, stats::var, numeric(1))
   )
-  summary_fit <- eventsurvey_summary(mean ~ day, daily, calibration = "pooled")
+  summary_fit <- eventsurvey_summary(mean ~ day, daily)
   summary_output <- tempfile(fileext = ".html")
   on.exit(unlink(summary_output), add = TRUE)
 
@@ -69,7 +73,7 @@ test_that("eventsurvey_report creates a self-contained HTML report", {
   expect_true(file.exists(summary_report))
   summary_html <- paste(readLines(summary_report, warn = FALSE), collapse = "\n")
   expect_match(summary_html, "eventsurvey_summary", fixed = TRUE)
-  expect_match(summary_html, "Pooled calibration", fixed = TRUE)
+  expect_match(summary_html, "Estimand-specific calibration", fixed = TRUE)
 
   combined_output <- tempfile(fileext = ".html")
   on.exit(unlink(combined_output), add = TRUE)
@@ -106,4 +110,12 @@ test_that("adjusted reports describe the model and use adjusted figures", {
   expect_match(html, "estimated covariate means", fixed = TRUE)
   expect_match(html, "Period-stratified respondent influence functions", fixed = TRUE)
   expect_true(grepl("unaffected by the\\s+event", html))
+})
+
+test_that("old saved fits cannot be mislabeled as daily-first reports", {
+  fit <- eventsurvey(y ~ day, sample_data)
+  fit$average_components <- NULL
+  expect_error(eventsurvey_report(fit), "predates daily-first aggregation")
+  fit$settings$calibration <- NULL
+  expect_error(eventsurvey_report(fit), "unsupported calibration")
 })

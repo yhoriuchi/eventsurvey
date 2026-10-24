@@ -1,3 +1,7 @@
+# What this code is about: Verify the package API and inference numerically.
+# Direct component/matrix access is intentional when testing the object contract.
+
+# Regression checks ------------------------------------------------------
 test_that("sample_data is ready for a two-line first analysis", {
   expect_s3_class(sample_data, "data.frame")
   expect_named(sample_data, c("day", "y"))
@@ -27,11 +31,11 @@ test_that("the core estimator returns coherent results", {
   expect_equal(nrow(fit$days), 6)
   expect_equal(fit$days$relative_period, 1:6)
   expect_equal(fit$estimate$n_windows, 12)
-  expect_equal(fit$estimate$n_reference, 12)
+  expect_equal(fit$estimate$n_reference, 72)
   expect_lt(fit$estimate$conf_low, fit$estimate$effect)
   expect_gt(fit$estimate$conf_high, fit$estimate$effect)
   expect_gte(fit$estimate$conf_low, -Inf)
-  expect_equal(max(abs(fit$reference_average$error)), fit$estimate$bias_bound)
+  expect_equal(mean(fit$days$bias_bound), fit$estimate$bias_bound)
 })
 
 test_that("compact printing omits the formula environment", {
@@ -358,29 +362,29 @@ test_that("both estimation interfaces accept tibbles", {
   expect_equal(summarized$days, individual$days, tolerance = 1e-12)
 })
 
-test_that("published application summaries reproduce manuscript tables", {
+test_that("published application summaries retain established point estimates", {
   data("published_examples", package = "eventsurvey")
   privacy <- subset(published_examples, grepl("privacy", outcome))
   fit_p <- eventsurvey_summary(mean ~ day, privacy,
     n = n, variance = variance, event_time = 0, window = 5,
     event_day = "include", report_event_day = FALSE,
-    schedule = "observed", calibration = "pooled"
+    schedule = "observed"
   )
   expect_equal(round(fit_p$days$effect, 3), c(-0.115, -0.050, -0.512, -0.050))
-  expect_equal(round(fit_p$estimate$bias_bound, 3), 0.780)
-  expect_equal(fit_p$estimate$n_windows, 7)
+  expect_equal(fit_p$estimate$bias_bound, mean(fit_p$average_components$bias_bound))
+  expect_equal(fit_p$estimate$n_windows, 6)
 
   procedural <- subset(published_examples, grepl("procedural", outcome))
   fit_r <- eventsurvey_summary(mean ~ day, procedural,
     n = n, variance = variance, event_time = 0, window = 7,
     event_day = "include", report_event_day = FALSE,
-    schedule = "observed", calibration = "pooled"
+    schedule = "observed"
   )
   expect_equal(
     round(fit_r$days$effect, 3),
     c(-0.079, -0.046, -0.444, -0.033, -0.017, -0.070)
   )
-  expect_equal(round(fit_r$estimate$bias_bound, 3), 0.402)
+  expect_equal(fit_r$estimate$bias_bound, mean(fit_r$average_components$bias_bound))
   expect_equal(fit_r$estimate$n_windows, 4)
 })
 

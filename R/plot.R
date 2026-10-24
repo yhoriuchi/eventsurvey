@@ -1,3 +1,7 @@
+# What this code is about: Plot fitted event-survey results and diagnostics.
+# Direct S3 component access reads the documented fitted-object structure.
+
+# Fitted-object plots ----------------------------------------------------
 #' Plot an event-during-survey analysis
 #'
 #' @param x An `eventsurvey` object.
@@ -25,6 +29,7 @@ plot.eventsurvey <- function(x,
   fit_color <- "#6C757D"
 
   if (type == "effects") {
+    calibration_method(x$settings)
     dat <- x$days
     out <- ggplot2::ggplot(dat, ggplot2::aes(x = relative_period, y = effect)) +
       ggplot2::geom_vline(
@@ -45,10 +50,9 @@ plot.eventsurvey <- function(x,
         )
       }
       target <- x$fitted$relative_period
-      if (!is.null(x$inference)) {
+      if (!is.null(x$inference$reference_variance)) {
         inner <- covariate_days(
-          x$fitted, x$inference, x$reference, 1 - inner_level,
-          calibration_method(x$settings)
+          x$fitted, x$inference, x$reference, 1 - inner_level
         )
       } else {
         built <- build_design(

@@ -16,9 +16,6 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 Prepare a numeric outcome and one equally spaced time variable before fitting.
 
 All estimation examples below use the default estimand-specific calibration.
-For a clearly labeled pooled comparison with the same model and target
-periods, see [Sensitivity Analysis](sensitivity.html).
-
 ## Formula requirements
 
 Use one outcome column, put time first, and optionally add baseline covariates:
@@ -32,9 +29,9 @@ Both sides of the formula must be untransformed column names. The following
 specifications are intentionally rejected:
 
 ```{r, eval = FALSE}
-eventsurvey(log(outcome) ~ time, survey_data)       # transformed in formula
-eventsurvey(outcome ~ I(time^2), survey_data)       # nonlinear time term
-eventsurvey(outcome ~ time * group, survey_data)    # interaction
+eventsurvey(log(outcome) ~ time, survey_data) # transformed in formula
+eventsurvey(outcome ~ I(time^2), survey_data) # nonlinear time term
+eventsurvey(outcome ~ time * group, survey_data) # interaction
 ```
 
 This restriction keeps the fitted model additive and linear in time.
@@ -59,7 +56,8 @@ library(dplyr)
 dat <- sample_data |>
   mutate(interview_date = as.Date("2026-06-15") + day)
 fit <- eventsurvey(y ~ interview_date, dat,
-                   event_time = as.Date("2026-06-15"), window = 6)
+  event_time = as.Date("2026-06-15"), window = 6
+)
 ```
 
 For timestamps, the package converts `POSIXt` values to calendar dates.
@@ -115,8 +113,10 @@ head(fit$windows)
 When the design requires uninterrupted calendar days, request strict checking:
 
 ```{r}
-strict_fit <- eventsurvey(y ~ day, dat, event_time = 0, window = 6,
-                          schedule = "consecutive")
+strict_fit <- eventsurvey(y ~ day, dat,
+  event_time = 0, window = 6,
+  schedule = "consecutive"
+)
 ```
 
 Strict mode stops and lists missing pre-event periods. Do not remove a date

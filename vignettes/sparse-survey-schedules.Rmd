@@ -36,9 +36,7 @@ actual elapsed forecast horizons of the final analysis and retains only
 complete pre-event reference windows. With missing periods, it may use fewer
 windows than the former observed-period algorithm, or stop when none match.
 It does not interpolate missing observations. The main examples below use
-estimand-specific calibration; a separate pooled comparison preserves the
-earlier observed-period construction. See [Methodology](methodology.html)
-for the different assumptions.
+estimand-specific calibration.
 
 ## Create complete and sparse schedules
 
@@ -183,40 +181,10 @@ observed dates are not necessarily the first six calendar dates. The package
 therefore reports the targeted dates rather than implying that the two rows
 estimate exactly the same quantity.
 
-## Pooled calibration as a comparison
-
-Keep the target schedules fixed and change only calibration. This comparison
-uses the earlier observed-period reference windows, which can span different
-elapsed horizons. It makes a different population bias assumption.
-
-```{r pooled-comparison}
-fit_complete_pooled <- eventsurvey(
-  y ~ day, complete,
-  window = 6, calibration = "pooled"
-)
-fit_sparse_pooled <- eventsurvey(
-  y ~ day, sparse,
-  window = 6, calibration = "pooled"
-)
-comparison_fits <- list(
-  "Complete: main, estimand-specific" = fit_complete,
-  "Complete: comparison, pooled" = fit_complete_pooled,
-  "Sparse: main, estimand-specific" = fit_sparse,
-  "Sparse: comparison, pooled" = fit_sparse_pooled
-)
-comparison <- do.call(rbind, lapply(comparison_fits, function(x) {
-  x$estimate[c("effect", "bias_bound", "conf_low", "conf_high", "n_windows")]
-}))
-knitr::kable(comparison, digits = 3)
-```
-
-The sparse main analysis retains `r fit_sparse$estimate$n_windows` complete
-matching reference windows, compared with
-`r fit_sparse_pooled$estimate$n_windows` under pooled calibration. Few matching
-windows make calibration more dependent on limited pre-event history; inspect
-the diagnostics. Intervals need not be nested when reference-window sets differ.
-If no complete matching window exists, estimand-specific calibration stops
-with an error rather than substituting the pooled method.
+The sparse analysis retains `r fit_sparse$estimate$n_windows` complete
+matching reference windows. Few matching windows make calibration more
+dependent on limited pre-event history. If no complete matching window exists,
+estimation stops with an error.
 
 ## Require consecutive calendar days when appropriate
 

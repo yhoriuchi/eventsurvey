@@ -155,41 +155,6 @@ fit_privacy <- eventsurvey_summary(
 fit_privacy$estimate
 ```
 
-The main result above uses estimand-specific calibration. For a pooled
-comparison, preserve the same event-day rule, window, and observed schedule:
-
-```{r privacy-pooled-comparison}
-fit_privacy_pooled <- eventsurvey_summary(
-  mean ~ day,
-  data = privacy,
-  n = n,
-  variance = variance,
-  event_time = 0,
-  window = 5,
-  event_day = "include",
-  report_event_day = FALSE,
-  schedule = "observed",
-  calibration = "pooled"
-)
-comparison <- rbind(
-  "Main: estimand-specific" = fit_privacy$estimate,
-  "Comparison: pooled" = fit_privacy_pooled$estimate
-)
-knitr::kable(
-  comparison[c("effect", "bias_bound", "conf_low", "conf_high", "n_windows")],
-  digits = 3
-)
-```
-
-This published-application reanalysis explicitly uses
-`event_day = "include"` to preserve its established estimand, while suppressing
-the ambiguous period-0 day-specific result. New analyses use the safer
-`"exclude"` default unless inclusion is substantively justified.
-
-The summary interface protects data access only to the extent that the
-released summaries satisfy the relevant license, consent, disclosure, and
-privacy requirements. Aggregation does not automatically make restricted data
-redistributable.
 
 ## Also see
 

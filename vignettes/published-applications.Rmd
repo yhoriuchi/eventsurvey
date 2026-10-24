@@ -29,54 +29,42 @@ suppressing its day-specific result. This differs from the package's safer
 default for new analyses, which excludes the event period when within-period
 exposure is unclear.
 
-All main analyses use **estimand-specific calibration**, the default since
-version 0.3.0. Each report presents these results first, followed by clearly
-labeled **pooled comparisons**. Within each outcome, the data, model, event-day
-rule, and target periods are identical; only calibration changes.
-
-The daily bounds use matching elapsed forecast horizons. The average bound
-uses the largest absolute signed window-average reference error. These
-require target-specific population bias assumptions; the pooled assumption
-does not imply them. The daily intervals are pointwise. On sparse schedules,
-matching elapsed horizons can also change the set of reference windows.
+All analyses use **estimand-specific calibration**. Daily bounds use matching
+elapsed forecast horizons. Period-average effects and bias bounds aggregate
+daily quantities after calibration. Average honest intervals use
+Bonferroni-adjusted daily intervals before aggregation; the displayed daily
+intervals are pointwise. The average standard errors include cross-day
+covariance. Validity requires the daily population bias restrictions.
 
 ## Example reports
 
 | Example | Event and outcome | Report |
 |:--|:--|:--|
-| Bateson and Weintraub (2022) | 2016 U.S. election; trust in the U.S. government | [Main results and pooled comparison](`r report_base`bateson-weintraub.html){target="_blank" rel="noopener noreferrer"} |
-| Epifanio, Giani, and Ivandic (2023) | 2005 London bombings; privacy- and procedural-rights restrictions | [Main results and pooled comparison](`r report_base`epifanio-giani-ivandic.html){target="_blank" rel="noopener noreferrer"} |
+| Bateson and Weintraub (2022) | 2016 U.S. election; trust in the U.S. government | [Full analysis report](`r report_base`bateson-weintraub.html){target="_blank" rel="noopener noreferrer"} |
+| Epifanio, Giani, and Ivandic (2023) | 2005 London bombings; privacy- and procedural-rights restrictions | [Full analysis report](`r report_base`epifanio-giani-ivandic.html){target="_blank" rel="noopener noreferrer"} |
 
 ## Compare average effects
 
 The table shows estimates and 95% honest intervals regenerated with version
-0.3.0. It contains analytical results only, not respondent records or input
-period summaries. Reference windows are counted separately for each method.
+0.3.0.9000. It contains analytical results only, not respondent records or input
+period summaries. Reference windows are counted separately for each outcome.
 
 ```{r application-comparison, echo = FALSE}
 comparison <- read.csv("figures/application-calibration.csv")
-comparison$Method <- ifelse(
-  comparison$calibration == "estimand",
-  "Main: estimand-specific", "Comparison: pooled"
-)
 comparison$Interval <- sprintf("[%.3f, %.3f]", comparison$conf_low, comparison$conf_high)
 knitr::kable(
-  comparison[c("outcome", "Method", "effect", "Interval", "n_windows")],
-  col.names = c("Outcome", "Method", "Average effect", "95% honest CI", "Reference windows"),
+  comparison[c("outcome", "effect", "Interval", "n_windows")],
+  col.names = c("Outcome", "Average effect", "95% honest CI", "Reference windows"),
   digits = 3,
   row.names = FALSE
 )
 ```
 
-Point estimates stay the same within each outcome. Differences in intervals
-reflect the calibration assumptions and, for sparse schedules, potentially
-different reference windows. The reports show each target period and the
-corresponding daily results. Both methods' average intervals include zero in
-these applications; calibration should be chosen on substantive grounds.
+The reports identify each target period and show its daily results.
 
 ## Bateson and Weintraub (2022)
 
-This report presents a seven-period main analysis and its pooled comparison.
+This report presents a seven-period analysis.
 AmericasBarometer data cannot
 be redistributed, so the package includes no respondent records or daily
 summaries. Authorized users can obtain the data from
@@ -85,26 +73,17 @@ report locally.
 
 [Open the Bateson--Weintraub report](`r report_base`bateson-weintraub.html){target="_blank" rel="noopener noreferrer"}
 
-### Daily effects: main method and pooled comparison
+### Daily effects
 
-The two figures hold the data, model, and target dates fixed and share the
-same vertical scale. Gray intervals
-show 95% confidence limits; dark inner intervals show 90% limits. Daily intervals
-are pointwise under the respective calibration assumption.
-
-**Main: estimand-specific calibration**
+Gray intervals show pointwise 95% confidence limits; dark inner intervals
+show pointwise 90% limits.
 
 ![Bateson daily effects using estimand-specific calibration](figures/bateson-effects.png)
-
-**Comparison: pooled calibration**
-
-![Bateson daily effects using pooled calibration](figures/bateson-effects-pooled.png)
 
 ## Epifanio, Giani, and Ivandic (2023)
 
 This report presents separately estimated privacy- and procedural-rights
-outcomes with estimand-specific calibration, followed by a pooled comparison
-for each outcome. The package includes the period-level sufficient statistics
+outcomes with estimand-specific calibration. The package includes the period-level sufficient statistics
 used in these analyses. Missing survey dates remain unobserved and are not
 interpolated.
 

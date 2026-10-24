@@ -1,3 +1,7 @@
+# What this code is about: Render validated fitted analyses as HTML reports.
+# S3 component access checks the fitted-object contract before presentation.
+
+# Report rendering -------------------------------------------------------
 #' Create a complete event-survey report
 #'
 #' `eventsurvey_report()` turns one fitted [eventsurvey()] or
@@ -23,7 +27,7 @@
 #'
 #' @examples
 #' if (requireNamespace("rmarkdown", quietly = TRUE) &&
-#'     rmarkdown::pandoc_available()) {
+#'   rmarkdown::pandoc_available()) {
 #'   report_file <- eventsurvey(y ~ day, sample_data) |>
 #'     eventsurvey_report(open = FALSE)
 #' }
@@ -39,6 +43,12 @@ eventsurvey_report <- function(x, file = NULL, open = interactive(),
     stop("`x` must be an eventsurvey object or a non-empty list of eventsurvey objects.",
       call. = FALSE
     )
+  }
+  for (fit in fits) {
+    calibration_method(fit$settings)
+    if (is.null(fit$average_components)) {
+      stop("This saved fit predates daily-first aggregation. Refit with the current package before creating a report.", call. = FALSE)
+    }
   }
   if (!is.logical(open) || length(open) != 1L || is.na(open)) {
     stop("`open` must be TRUE or FALSE.", call. = FALSE)

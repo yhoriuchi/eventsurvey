@@ -15,7 +15,7 @@ eventsurvey_summary(
   report_event_day = TRUE,
   alpha = 0.05,
   schedule = c("observed", "consecutive"),
-  calibration = c("estimand", "pooled")
+  calibration = "estimand"
 )
 }
 \arguments{
@@ -58,17 +58,11 @@ containing responses and supports sparse survey schedules. \code{"consecutive"}
 requires every period on the time scale to be represented. In either mode,
 models use the actual time values rather than compressing gaps.}
 
-\item{calibration}{How pre-event errors calibrate the bias bound. The default,
-\code{"estimand"}, uses matching elapsed horizons for daily effects and the
-signed within-window average error for the window-average effect.
-\code{"pooled"} reproduces the previous method, using all individual reference
-errors for every target. This choice changes the population bias assumption.
-Estimand calibration uses common complete reference windows for all targets:
-each fits \code{window} observed pre-event periods and forecasts at the same
-elapsed offsets from its last fitting period as the final analysis. All
-forecast dates must be observed before the event. With sparse schedules,
-fitting spans can differ, and no matching windows produces an error.
-Pooled calibration retains the rolling windows defined by \code{schedule}.}
+\item{calibration}{The calibration method. Only \code{"estimand"} is supported.
+Daily effects use matching elapsed forecast horizons. Each reference
+window fits \code{window} observed pre-event periods and forecasts at the
+same elapsed offsets as the final analysis. All forecast dates must be
+observed before the event; no matching windows produces an error.}
 }
 \value{
 An object of class \code{eventsurvey}; see \code{\link[=eventsurvey]{eventsurvey()}}.

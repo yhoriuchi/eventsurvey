@@ -1,3 +1,7 @@
+# What this code is about: Verify the package API and inference numerically.
+# Direct component/matrix access is intentional when testing the object contract.
+
+# Regression checks ------------------------------------------------------
 covariate_test_data <- function(seed = 127, n = 40L) {
   set.seed(seed)
   day <- rep(c(-18:0, 1:6), each = n)
@@ -204,7 +208,7 @@ test_that("categorical coding, units and irrelevant periods do not change result
   expect_equal(outside$estimate, units_fit$estimate, tolerance = 1e-9)
 })
 
-test_that("average calibration retains within-window and effect-reference covariance", {
+test_that("adjusted daily aggregation retains all sampling covariance", {
   dat <- covariate_test_data(n = 25)
   fit <- eventsurvey(y ~ day + x, dat, window = 4)
   # Independent lm score implementation, in the original covariate units.
@@ -227,36 +231,28 @@ test_that("average calibration retains within-window and effect-reference covari
     start <- fit$reference$fit_start[j]
     score(start:(start + 3L), fit$reference$forecast_period[j])
   }, numeric(nrow(dat)))
-  groups <- split(seq_len(ncol(reference)), fit$reference$fit_start)
-  averages <- vapply(groups, function(i) rowMeans(reference[, i, drop = FALSE]), numeric(nrow(dat)))
-  expect_equal(fit$inference$average_reference_variance, unname(colSums(averages^2)), tolerance = 1e-10)
-  expect_equal(fit$inference$average_reference_day_covariance, unname(crossprod(averages, daily)), tolerance = 1e-10)
-  expect_equal(fit$reference_average$std_error, unname(sqrt(colSums(averages^2))), tolerance = 1e-10)
-  # Ignoring covariance between horizons gives a demonstrably different answer.
-  independent_variance <- vapply(groups, function(i) sum(colSums(reference[, i, drop = FALSE]^2)) / length(i)^2, numeric(1))
-  expect_gt(max(abs(independent_variance - colSums(averages^2))), 1e-5)
-  signs <- c(-1, 1)
-  limits <- lapply(signs, function(sign) {
-    combined <- sweep(sign * averages, 1, rowMeans(daily), "+")
-    point <- fit$estimate$effect + sign * fit$reference_average$error
+  expect_equal(fit$inference$day_covariance, unname(crossprod(daily)), tolerance = 1e-10)
+  expect_equal(fit$estimate$std_error, sqrt(sum(rowMeans(daily)^2)), tolerance = 1e-10)
+  expect_gt(abs(fit$estimate$std_error^2 - sum(colSums(daily^2)) / 16), 1e-5)
+  components <- t(vapply(1:4, function(h) {
+    i <- which(fit$reference$horizon == h + 1)
+    combined <- cbind(
+      sweep(reference[, i, drop = FALSE], 1, daily[, h], "+"),
+      sweep(-reference[, i, drop = FALSE], 1, daily[, h], "+")
+    )
+    point <- fit$days$effect[h] + c(fit$reference$error[i], -fit$reference$error[i])
     se <- sqrt(colSums(combined^2))
-    c(min(point - qnorm(0.975) * se), max(point + qnorm(0.975) * se))
-  })
-  expected <- c(min(vapply(limits, `[`, numeric(1), 1)), max(vapply(limits, `[`, numeric(1), 2)))
-  expect_equal(unname(confint(fit)[1, ]), expected, tolerance = 1e-10)
-  pooled <- eventsurvey(y ~ day + x, dat, window = 4, calibration = "pooled")
-  expect_equal(fit$estimate$effect, pooled$estimate$effect)
-  expect_gte(fit$estimate$conf_low, pooled$estimate$conf_low - 1e-10)
-  expect_lte(fit$estimate$conf_high, pooled$estimate$conf_high + 1e-10)
-  expect_true(all(fit$days$conf_low >= pooled$days$conf_low - 1e-10))
-  expect_true(all(fit$days$conf_high <= pooled$days$conf_high + 1e-10))
+    c(min(point - qnorm(1 - 0.05 / 8) * se), max(point + qnorm(1 - 0.05 / 8) * se))
+  }, numeric(2)))
+  expect_equal(unname(confint(fit)[1, ]), colMeans(components), tolerance = 1e-10)
+  expect_equal(fit$estimate$bias_bound, mean(fit$days$bias_bound))
 })
 
-test_that("both covariance engines agree for both calibrations on sparse data", {
+test_that("both covariance engines agree on sparse data", {
   dat <- covariate_test_data()
   dat <- dat[!dat$day %in% c(-9, -1, 2), ]
   ps <- eventsurvey:::period_stats(data.frame(day = dat$day, y = dat$y))
-  for (calibration in c("pooled", "estimand")) {
+  for (calibration in "estimand") {
     for (event_day in c("exclude", "include")) {
       target <- if (event_day == "exclude") c(1L, 3L, 4L, 5L) else c(0L, 1L, 3L, 4L)
       built <- eventsurvey:::build_design(ps, 4, target,
@@ -269,7 +265,7 @@ test_that("both covariance engines agree for both calibrations on sparse data", 
       )
       expect_equal(influence$estimate, analytic$estimate, tolerance = 1e-10)
       expect_equal(influence$days, analytic$days, tolerance = 1e-10)
-      expect_equal(influence$reference_average, analytic$reference_average, tolerance = 1e-10)
+      expect_equal(influence$average_components, analytic$average_components, tolerance = 1e-10)
     }
   }
 })

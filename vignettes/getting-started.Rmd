@@ -18,23 +18,18 @@ but its no-event counterpart is not. The central task is therefore to
 extrapolate the pre-event path and compare it with what was observed after the
 event.
 
-## Install a released version
+## Install the current version
 
-For the version used in these examples, install the fixed `v0.3.0` tag:
+These examples use the development version with daily calibration followed by
+aggregation for period averages. The latest tagged release predates this change.
 
 ```{r installation, eval = FALSE}
 install.packages("remotes")
-remotes::install_github("yhoriuchi/eventsurvey@v0.3.0")
+remotes::install_github("yhoriuchi/eventsurvey", ref = "main")
 packageVersion("eventsurvey")
 ```
 
-The [0.3.0 release notes](https://github.com/yhoriuchi/eventsurvey/releases/tag/v0.3.0)
-describe the estimand-specific default and the retained pooled option.
-To use subsequent development changes instead, install from `main`:
-
-```{r development-installation, eval = FALSE}
-remotes::install_github("yhoriuchi/eventsurvey", ref = "main")
-```
+For reproducibility, record the installed Git commit as well as the version.
 
 ## 1. Prepare respondent-level data
 
@@ -116,39 +111,30 @@ It is generally wider than the conventional interval because it allows the
 post-event extrapolation to be wrong by as much as the worst comparable
 pre-event forecast.
 
-### Choose calibration
+### Estimate the average effect over five days
 
-The default matches calibration to each estimand:
+The package uses estimand-specific calibration for each daily effect, matching
+reference errors by elapsed forecast horizon. For a period average, it first
+calibrates each day, then aggregates with equal day weights:
 
-- **Daily effect:** use reference errors at the same elapsed forecast horizon.
-- **Average effect:** average signed errors within each placebo window, then
-  use the largest absolute window average.
-
-Keep estimand-specific calibration as the main method and label pooled
-calibration as a comparison with the method used before version 0.3.0:
-
-```{r calibration-options}
-fit_specific <- eventsurvey(y ~ day, sample_data, calibration = "estimand")
-fit_pooled <- eventsurvey(y ~ day, sample_data, calibration = "pooled")
-fit_specific$reference_average
-comparison <- rbind(
-  "Main: estimand-specific" = fit_specific$estimate,
-  "Comparison: pooled" = fit_pooled$estimate
+```{r five-day-average}
+fit_five <- eventsurvey(
+  y ~ day, sample_data,
+  window = 5,
+  event_day = "exclude", schedule = "consecutive"
 )
-knitr::kable(
-  comparison[c("effect", "bias_bound", "conf_low", "conf_high")],
-  digits = 3
-)
+fit_five$estimate
+fit_five$days
+fit_five$average_components
 ```
 
-Pooled calibration uses all individual reference errors for every target.
-The point estimates are unchanged, but the two methods impose different
-population bias bounds. Estimand-specific intervals require the bound for
-each daily or average target; the pooled assumption does not imply those
-restrictions. Daily intervals are pointwise, not a simultaneous band.
-The same option works with covariates and `eventsurvey_summary()`.
-See [Methodology and Assumptions](methodology.html) for the inference argument
-and [Sensitivity Analysis](sensitivity.html) for a direct comparison.
+This targets Days 1–5 and fits Days -5 through -1. Consecutive mode ensures
+that five observed periods really are five calendar days. The standard error
+includes covariance from the shared pre-event regression. The average honest
+interval uses daily calibration at significance level `alpha / 5` before
+averaging endpoints (Bonferroni); the displayed daily intervals use `alpha`.
+The same procedure works with covariates and `eventsurvey_summary()`.
+See [Methodology and Assumptions](methodology.html) for the derivation.
 
 ## 3. See what was extrapolated
 
