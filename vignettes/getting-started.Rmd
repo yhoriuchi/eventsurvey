@@ -20,16 +20,16 @@ event.
 
 ## Install the current version
 
-These examples use version 0.4.1, with daily calibration followed by
+These examples use version 0.4.2, with daily calibration followed by
 aggregation for period averages.
 
 ```{r installation, eval = FALSE}
 install.packages("remotes")
-remotes::install_github("yhoriuchi/eventsurvey", ref = "v0.4.1")
+remotes::install_github("yhoriuchi/eventsurvey", ref = "v0.4.2")
 packageVersion("eventsurvey")
 ```
 
-The installation is pinned to the `v0.4.1` release for reproducibility.
+The installation is pinned to the `v0.4.2` release for reproducibility.
 
 ## 1. Prepare respondent-level data
 

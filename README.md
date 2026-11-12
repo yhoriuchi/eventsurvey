@@ -5,7 +5,7 @@
 <p align="center">
   <a href="https://github.com/yhoriuchi/eventsurvey/releases/latest"><img src="https://img.shields.io/github/v/release/yhoriuchi/eventsurvey?sort=semver" alt="Latest GitHub release" /></a>
   <a href="https://github.com/yhoriuchi/eventsurvey/actions/workflows/R-CMD-check.yaml"><img src="https://github.com/yhoriuchi/eventsurvey/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check status" /></a>
-  <img src="https://img.shields.io/badge/CRAN-not%20published-lightgrey" alt="CRAN not published" />
+  <img src="https://img.shields.io/badge/CRAN-under%20review-yellow" alt="CRAN under review" />
   <img src="https://img.shields.io/badge/downloads-not%20available-lightgrey" alt="Downloads not available" />
 </p>
 
@@ -17,17 +17,27 @@ without the event, and compares that counterfactual with the observed
 post-event outcomes. The package provides estimates, uncertainty intervals,
 automatic diagnostics, figures, and a shareable HTML report.
 
+## Version 0.4.2
+
+Version 0.4.2 fixes documentation links and restores the caller's knitr option
+after generating an HTML report. Estimates and inference are unchanged from
+version 0.4.1. See the [changelog](https://yhoriuchi.github.io/eventsurvey/news/index.html)
+for details.
+
+Version 0.4.2 was submitted to CRAN on November 12, 2026, and is under review.
+It is available from GitHub using the installation command below.
+
 ## Installation
 
-Install version 0.4.1, which uses daily estimand-specific
+Install version 0.4.2, which uses daily estimand-specific
 calibration followed by aggregation for period averages:
 
 ```r
 install.packages("remotes")
-remotes::install_github("yhoriuchi/eventsurvey", ref = "v0.4.1")
+remotes::install_github("yhoriuchi/eventsurvey", ref = "v0.4.2")
 ```
 
-This command pins the installation to the `v0.4.1` release for reproducibility.
+This command pins the installation to the `v0.4.2` release for reproducibility.
 
 Check your installed package version with `packageVersion("eventsurvey")`.
 The release badge links to the [latest published release](https://github.com/yhoriuchi/eventsurvey/releases/latest);
