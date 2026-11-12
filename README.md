@@ -74,7 +74,7 @@ The average standard error includes covariance between daily estimates sharing
 the pre-event regression. The average honest interval aggregates daily intervals
 with a Bonferroni correction; displayed daily intervals remain pointwise.
 Inspect `fit$average_components` for the intervals used in aggregation.
-See [Methodology](articles/methodology.html) for assumptions and inference.
+See [Methodology](https://yhoriuchi.github.io/eventsurvey/articles/methodology.html) for assumptions and inference.
 
 ## Add pre-event covariates
 
@@ -89,22 +89,22 @@ categorical indicators. Each pre-event window fits its own OLS model. Forecasts
 average predictions over each forecast period's respondents, and uncertainty
 includes estimated covariate means and overlapping fits. Use characteristics
 unaffected by the event, and assess forecasting performance before the event.
-See [Covariate Adjustment](articles/covariate-adjustment.html) for a runnable
+See [Covariate Adjustment](https://yhoriuchi.github.io/eventsurvey/articles/covariate-adjustment.html) for a runnable
 example, assumptions, and limitations. Summary-only data remain time-only.
 
 ## Learn more
 
-- [Getting Started](articles/getting-started.html) — Fit a model and
+- [Getting Started](https://yhoriuchi.github.io/eventsurvey/articles/getting-started.html) — Fit a model and
   create a report.
-- [Reading an HTML Report](articles/reading-html-reports.html) — Interpret the
+- [Reading an HTML Report](https://yhoriuchi.github.io/eventsurvey/articles/reading-html-reports.html) — Interpret the
   estimates, diagnostics, and figures.
-- [Methodology](articles/methodology.html) — Understand the estimand,
+- [Methodology](https://yhoriuchi.github.io/eventsurvey/articles/methodology.html) — Understand the estimand,
   assumptions, and uncertainty procedure.
-- [Examples](articles/published-applications.html) — See the
+- [Examples](https://yhoriuchi.github.io/eventsurvey/articles/published-applications.html) — See the
   workflow applied to published studies.
 
-Browse the [complete article library](articles/index.html) or the
-[function reference](reference/index.html).
+Browse the [complete article library](https://yhoriuchi.github.io/eventsurvey/articles/index.html) or the
+[function reference](https://yhoriuchi.github.io/eventsurvey/reference/index.html).
 
 ## Additional Info
 

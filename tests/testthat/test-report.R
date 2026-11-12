@@ -29,8 +29,11 @@ test_that("eventsurvey_report creates a self-contained HTML report", {
   fit <- eventsurvey(y ~ day, dat)
   output <- tempfile(fileext = ".html")
   on.exit(unlink(output), add = TRUE)
+  old_options <- options(knitr.duplicate.label = "error")
+  on.exit(options(old_options), add = TRUE)
 
   report <- eventsurvey_report(fit, file = output, open = FALSE)
+  expect_identical(getOption("knitr.duplicate.label"), "error")
   expect_true(file.exists(report))
   html <- paste(readLines(report, warn = FALSE), collapse = "\n")
   expect_match(html, "Event Survey Report", fixed = TRUE)
@@ -65,11 +68,13 @@ test_that("eventsurvey_report creates a self-contained HTML report", {
   summary_output <- tempfile(fileext = ".html")
   on.exit(unlink(summary_output), add = TRUE)
 
+  options(knitr.duplicate.label = NULL)
   summary_report <- eventsurvey_report(
     summary_fit,
     file = summary_output,
     open = FALSE
   )
+  expect_null(getOption("knitr.duplicate.label"))
   expect_true(file.exists(summary_report))
   summary_html <- paste(readLines(summary_report, warn = FALSE), collapse = "\n")
   expect_match(summary_html, "eventsurvey_summary", fixed = TRUE)

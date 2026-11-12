@@ -1,3 +1,9 @@
+# eventsurvey 0.4.2
+
+* Fixes README article and reference links to use absolute website URLs,
+  so they work when displayed outside the package website.
+* Restores the caller's knitr duplicate-label option after generating a report.
+
 # eventsurvey 0.4.1
 
 * Removes the `calibration` argument from `eventsurvey()` and

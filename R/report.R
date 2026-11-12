@@ -122,6 +122,8 @@ eventsurvey_report <- function(x, file = NULL, open = interactive(),
   report_environment <- new.env(parent = globalenv())
   report_environment$fits <- fits
   report_environment$section_template <- section_template
+  old_options <- options("knitr.duplicate.label")
+  on.exit(options(old_options), add = TRUE)
   rendered <- rmarkdown::render(
     input = template,
     output_file = basename(file),
